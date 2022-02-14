@@ -14,14 +14,14 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 from geopy import distance
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram import ReplyKeyboardRemove, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Updater,
     CommandHandler,
     MessageHandler,
     Filters,
     ConversationHandler,
-    CallbackContext,
+    CallbackContext, CallbackQueryHandler,
 )
 
 load_dotenv()
@@ -35,9 +35,9 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-ENTERED_NAME, POSTAL_VALIDATE, POSTAL_PASSED, MATCHED = range(4)
-CONFIRMATION_POSITIVE = 'Yep correct.'
-CONFIRMATION_NEGATIVE = 'Nope, let me key in again.'
+ENTERED_NAME, CHECK_POSTAL, POSTAL_VALIDATED, MATCHED = range(4)
+CONFIRMATION_POSITIVE = 'Yep correct 👍'
+CONFIRMATION_NEGATIVE = 'Nope, wrong liao 👎'
 
 
 def start(update: Update, context: CallbackContext) -> int:
@@ -55,46 +55,70 @@ def location(update: Update, context: CallbackContext) -> int:
     """Stores the selected name and asks for their location."""
     context.user_data['name'] = update.message.text
     logger.info("Preferred way of being addressed: %s", context.user_data['name'])
-    update.message.reply_text(f'Hi {update.message.text}, nice to meet you! Can let me kay-poh your postal code?', reply_markup=ReplyKeyboardRemove())
+    update.message.reply_text(f'👋 {update.message.text}, nice to meet you! '
+                              f'Can let me kay-poh your postal code (e.g.123456)?', reply_markup=ReplyKeyboardRemove())
 
-    return POSTAL_VALIDATE
+    return CHECK_POSTAL
+
+
+def retry_location(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
+    query.message.reply_text(f'No problem. What\'s your postal code (e.g.123456)?', reply_markup=ReplyKeyboardRemove())
+
+    return CHECK_POSTAL
 
 
 def check_postal_validity(update: Update, context: CallbackContext) -> int:
     pattern = re.compile("^\d{6}$")
     postal = update.message.text
     match_pattern = bool(pattern.match(postal))
+
     if not match_pattern:
         logger.info("Postal %s failed. Asking for input again.", postal)
-        update.message.reply_text(f'You entered {postal}. Doesn\'t seem right leh... Must be 6-digit (e.g. 012345) hor. Try again?', reply_markup=ReplyKeyboardRemove())
-        return POSTAL_VALIDATE
-    else:
-        logger.info("Postal %s passed.", postal)
-        context.user_data['postal'] = postal
-        addr, lat, lng = get_addr_lat_lng(context.user_data['postal'])
-        context.user_data['lat_lng'] = (lat, lng)
-        logger.info("Address: %s Lat: %s Lng: %s", addr, lat, lng)
-        keyboard = [[CONFIRMATION_POSITIVE, CONFIRMATION_NEGATIVE]]
-        update.message.reply_text(
-            f'{context.user_data["name"]}, does this address look right? \n{addr}',
-            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
-        )
+        update.message.reply_text(f'Doesn\'t seem right leh... Must be 6-digit (e.g. 123456) hor. You entered {postal}. Try again?', reply_markup=ReplyKeyboardRemove())
+        return CHECK_POSTAL
 
-        return POSTAL_PASSED
+    logger.info("Postal basic syntex %s passed.", postal)
+    context.user_data['postal'] = postal
+    r = search_postal(context.user_data['postal'])
+    if not r:
+        update.message.reply_text(f'🤔 Cannot find this address... You entered {postal}. Try again?', reply_markup=ReplyKeyboardRemove())
+        return CHECK_POSTAL
+
+    res = r[0]  # take first result
+    addr = res['ADDRESS'].title()
+    lat, lng = res['LATITUDE'], res['LONGITUDE']
+    context.user_data['lat_lng'] = (lat, lng)
+    logger.info("Address: %s Lat: %s Lng: %s", addr, lat, lng)
+    keyboard = [
+        [
+            InlineKeyboardButton(CONFIRMATION_POSITIVE, callback_data=CONFIRMATION_POSITIVE),
+            InlineKeyboardButton(CONFIRMATION_NEGATIVE, callback_data=CONFIRMATION_NEGATIVE),
+        ]
+    ]
+    update.message.reply_text(
+        f'Does this address look right? \n{addr}',
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+    return POSTAL_VALIDATED
 
 
 def match_group(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
     chosen_rc, link = find_closest_rc(context.user_data['lat_lng'])
     logger.info("Chosen rc: %s Group link: %s", chosen_rc, link)
-    update.message.reply_text(
-        f'Yay! We found your kampong. \nTelegram group name: {chosen_rc}\nTelegram link: {link}\n'
-        f'Join and have fun kay-pohing!'
+    query.message.reply_text(
+        f'We found your kampong 🙌 🙌  \nTelegram group name: {chosen_rc}\nTelegram link: {link}\n'
+        f'Join in and have fun kay-pohing 😎'
     )
 
     return ConversationHandler.END
 
 
-def get_addr_lat_lng(postal_code) -> Tuple[str, float, float]:
+def search_postal(postal_code) -> Tuple[str, float, float]:
     """
     :param postal_code:
     :return: addr, lat, lng
@@ -102,11 +126,7 @@ def get_addr_lat_lng(postal_code) -> Tuple[str, float, float]:
     query = {'searchVal': postal_code, 'returnGeom': 'Y', 'getAddrDetails':'Y'}
     api = 'https://developers.onemap.sg/commonapi/search'
     response = requests.get(api, params=query)
-    res = response.json()['results'][0] # take the first result
-    addr = res['ADDRESS'].title()
-    lat, lng = res['LATITUDE'], res['LONGITUDE']
-
-    return addr, float(lat), float(lng)
+    return response.json()['results']
 
 
 def find_closest_rc(lat_lng: Tuple[float, float]):
@@ -127,10 +147,15 @@ def cancel(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text(
-        'Bye! I hope we can talk again some day.', reply_markup=ReplyKeyboardRemove()
+        'Cya!', reply_markup=ReplyKeyboardRemove()
     )
 
     return ConversationHandler.END
+
+
+def help_command(update: Update, context: CallbackContext) -> None:
+    """Displays info on how to use the bot."""
+    update.message.reply_text("Type /start to kind your kampong!")
 
 
 def main() -> None:
@@ -144,13 +169,17 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            ENTERED_NAME: [MessageHandler(Filters.text, location)],
-            POSTAL_VALIDATE: [MessageHandler(Filters.text, check_postal_validity)],
-            POSTAL_PASSED: [
-                MessageHandler(
-                    Filters.regex(f'^{CONFIRMATION_POSITIVE}$'), match_group
+            ENTERED_NAME: [MessageHandler(Filters.text & (~Filters.command), location)],
+            CHECK_POSTAL: [MessageHandler(Filters.text & (~Filters.command), check_postal_validity)],
+            POSTAL_VALIDATED: [
+                CallbackQueryHandler(
+                    match_group,
+                    pattern=f'^{CONFIRMATION_POSITIVE}$',
                 ),
-                MessageHandler(Filters.regex(f'^{CONFIRMATION_NEGATIVE}$'), location),
+                CallbackQueryHandler(
+                    retry_location,
+                    pattern=f'^{CONFIRMATION_NEGATIVE}$',
+                )
             ]
 
         },
@@ -158,6 +187,8 @@ def main() -> None:
     )
 
     dispatcher.add_handler(conv_handler)
+
+    dispatcher.add_handler(CommandHandler('help', help_command))
 
     # Start the Bot
     updater.start_polling()
@@ -169,5 +200,5 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    RC_LOCATION = pd.read_csv('rc data/rc_name_coords_link.csv')
+    RC_LOCATION = pd.read_csv('rc data/rc_name_coords_link.csv')  # persisted in memory
     main()
