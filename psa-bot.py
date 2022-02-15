@@ -2,7 +2,7 @@
 # pylint: disable=C0116,W0613
 
 """
-Bot for directing new joiners to their group
+Bot for directing new joiners to their gorup
 """
 
 import logging
@@ -26,7 +26,7 @@ from telegram.ext import (
 
 load_dotenv()
 
-BOT_TOKEN = os.getenv('MATCH_BOT_TOKEN')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
 
 # Enable logging
 logging.basicConfig(
@@ -115,21 +115,25 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
 
     return POSTAL_VALIDATED
 
-def personal_pledge():
-    pass
-    # todo: i promise to be respectful of others etc. etc.
 
 def match_group(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
     chosen_group, link = find_closest(context.user_data['lat_lng'])
-    logger.info("Chosen group: %s Group link: %s", chosen_group, link)
+    logger.info("Chosen rc: %s Group link: %s", chosen_group, link)
     query.message.reply_text(
         f'We found your kampong 🙌 🙌  \nTelegram group name: {GROUP_IDENTIFIER} {chosen_group}\nTelegram link: {link}\n'
         f'Join in and have fun kay-pohing 😎'
     )
     query.message.reply_text(
-        '',
+        'When you join the group, you may notice that there are bots for publicizing community events, '
+        'broadcasting public advisories and many more. '
+        'Fret not, these bots won\'t be able to read your messages because nobody likes being snooped on. '
+        'We get it. We want our favorite chicken rice stall to be our '
+        'kampong\'s best kept secret too. 🙈\n'
+        'All the bots are in _privacy mode_. '
+        'Don\'t take our word for it, here is the official notice by Telegram!\n'
+        'https://core.telegram.org/bots#privacy-mode',
         parse_mode=ParseMode.MARKDOWN
     )
 
@@ -218,5 +222,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    RC_LOCATION = pd.read_csv('cc data/cc_name_coords_link.csv')  # persisted in memory
     main()
