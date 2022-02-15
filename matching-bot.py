@@ -14,7 +14,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 from geopy import distance
-from telegram import ReplyKeyboardRemove, Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import ReplyKeyboardRemove, Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -38,14 +38,16 @@ logger = logging.getLogger(__name__)
 ENTERED_NAME, CHECK_POSTAL, POSTAL_VALIDATED, MATCHED = range(4)
 CONFIRMATION_POSITIVE = 'Yep correct 👍'
 CONFIRMATION_NEGATIVE = 'Nope, wrong liao 👎'
+GROUP_IDENTIFIER = '[Kaypoh @ Kampong]'
 
 
 def start(update: Update, context: CallbackContext) -> int:
     """Starts the conversation and asks the user for their name."""
     update.message.reply_text(
         'Har-lo! My name is KayPoh Bot. \n'
-        'What\'s your name? \n'
-        'Send /cancel to stop talking to me.\n\n'
+        'What\'s your *name*? \n'
+        'Send /cancel to end my kay-poh.\n\n',
+        parse_mode=ParseMode.MARKDOWN
         ),
 
     return ENTERED_NAME
@@ -56,7 +58,9 @@ def location(update: Update, context: CallbackContext) -> int:
     context.user_data['name'] = update.message.text
     logger.info("Preferred way of being addressed: %s", context.user_data['name'])
     update.message.reply_text(f'👋 {update.message.text}, nice to meet you! '
-                              f'Can let me kay-poh your postal code (e.g.123456)?', reply_markup=ReplyKeyboardRemove())
+                              f'Can let me kay-poh your *postal code* (e.g.123456)?',
+                              reply_markup=ReplyKeyboardRemove(),
+                              parse_mode=ParseMode.MARKDOWN)
 
     return CHECK_POSTAL
 
@@ -64,7 +68,9 @@ def location(update: Update, context: CallbackContext) -> int:
 def retry_location(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
-    query.message.reply_text(f'No problem. What\'s your postal code (e.g.123456)?', reply_markup=ReplyKeyboardRemove())
+    query.message.reply_text(f'No problem. What\'s your *postal code* (e.g.123456)?',
+                             reply_markup=ReplyKeyboardRemove(),
+                             parse_mode=ParseMode.MARKDOWN)
 
     return CHECK_POSTAL
 
@@ -76,14 +82,18 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
 
     if not match_pattern:
         logger.info("Postal %s failed. Asking for input again.", postal)
-        update.message.reply_text(f'Doesn\'t seem right leh... Must be 6-digit (e.g. 123456) hor. You entered {postal}. Try again?', reply_markup=ReplyKeyboardRemove())
+        update.message.reply_text(f'Doesn\'t seem right leh... Must be *6-digit* (e.g. 123456) hor. You entered *{postal}*. Try again?',
+                                  reply_markup=ReplyKeyboardRemove(),
+                                  parse_mode=ParseMode.MARKDOWN)
         return CHECK_POSTAL
 
-    logger.info("Postal basic syntex %s passed.", postal)
+    logger.info("Postal basic syntax %s passed.", postal)
     context.user_data['postal'] = postal
     r = search_postal(context.user_data['postal'])
     if not r:
-        update.message.reply_text(f'🤔 Cannot find this address... You entered {postal}. Try again?', reply_markup=ReplyKeyboardRemove())
+        update.message.reply_text(f'🤔 Cannot find this address... You entered *{postal}*. Try again?',
+                                  reply_markup=ReplyKeyboardRemove(),
+                                  parse_mode=ParseMode.MARKDOWN)
         return CHECK_POSTAL
 
     res = r[0]  # take first result
@@ -98,8 +108,9 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
         ]
     ]
     update.message.reply_text(
-        f'Does this address look right? \n{addr}',
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        f'Does this *address* look right? \n{addr}',
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN
     )
 
     return POSTAL_VALIDATED
@@ -108,10 +119,10 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
 def match_group(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
-    chosen_rc, link = find_closest_rc(context.user_data['lat_lng'])
-    logger.info("Chosen rc: %s Group link: %s", chosen_rc, link)
+    chosen_group, link = find_closest(context.user_data['lat_lng'])
+    logger.info("Chosen rc: %s Group link: %s", chosen_group, link)
     query.message.reply_text(
-        f'We found your kampong 🙌 🙌  \nTelegram group name: {chosen_rc}\nTelegram link: {link}\n'
+        f'We found your kampong 🙌 🙌  \nTelegram group name: {GROUP_IDENTIFIER} {chosen_group}\nTelegram link: {link}\n'
         f'Join in and have fun kay-pohing 😎'
     )
 
@@ -129,7 +140,7 @@ def search_postal(postal_code) -> Tuple[str, float, float]:
     return response.json()['results']
 
 
-def find_closest_rc(lat_lng: Tuple[float, float]):
+def find_closest(lat_lng: Tuple[float, float]):
     min_dist = 9999
     chosen_rc = ''
     link = ''
@@ -155,7 +166,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Displays info on how to use the bot."""
-    update.message.reply_text("Type /start to kind your kampong!")
+    update.message.reply_text("Type /start to find your kampong!")
 
 
 def main() -> None:
@@ -200,5 +211,5 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    RC_LOCATION = pd.read_csv('rc data/rc_name_coords_link.csv')  # persisted in memory
+    RC_LOCATION = pd.read_csv('cc data/cc_name_coords_link.csv')  # persisted in memory
     main()
