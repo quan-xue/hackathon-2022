@@ -125,6 +125,17 @@ def match_group(update: Update, context: CallbackContext) -> int:
         f'We found your kampong 🙌 🙌  \nTelegram group name: {GROUP_IDENTIFIER} {chosen_group}\nTelegram link: {link}\n'
         f'Join in and have fun kay-pohing 😎'
     )
+    query.message.reply_text(
+        'When you join the group, you may notice that there are bots for publicizing community events, '
+        'broadcasting public advisories and many more. '
+        'Fret not, these bots won\'t be able to read your messages because nobody likes being snooped on. '
+        'We get it. We want our favorite chicken rice stall to be our '
+        'kampong\'s best kept secret too. 🙈\n'
+        'All the bots are in _privacy mode_. '
+        'Don\'t take our word for it, here is the official notice by Telegram!\n'
+        'https://core.telegram.org/bots#privacy-mode',
+        parse_mode=ParseMode.MARKDOWN
+    )
 
     return ConversationHandler.END
 
