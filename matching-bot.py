@@ -2,16 +2,14 @@
 # pylint: disable=C0116,W0613
 
 """
-Bot for directing new joiners to their gorup
+Bot for directing new joiners to their group
 """
 
 import logging
 import os
-import re
 from typing import Tuple
 
 import pandas as pd
-import requests
 from dotenv import load_dotenv
 from geopy import distance
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
@@ -111,6 +109,9 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
 
     return POSTAL_VALIDATED
 
+def personal_pledge():
+    pass
+    # todo: i promise to be respectful of others etc. etc.
 
 def match_group(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
@@ -122,14 +123,7 @@ def match_group(update: Update, context: CallbackContext) -> int:
         f'Join in and have fun kay-pohing 😎'
     )
     query.message.reply_text(
-        'When you join the group, you may notice that there are bots for publicizing community events, '
-        'broadcasting public advisories and many more. '
-        'Fret not, these bots won\'t be able to read your messages because nobody likes being snooped on. '
-        'We get it. We want our favorite chicken rice stall to be our '
-        'kampong\'s best kept secret too. 🙈\n'
-        'All the bots are in _privacy mode_. '
-        'Don\'t take our word for it, here is the official notice by Telegram!\n'
-        'https://core.telegram.org/bots#privacy-mode',
+        '',
         parse_mode=ParseMode.MARKDOWN
     )
 
