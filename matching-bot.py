@@ -35,18 +35,20 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-ENTERED_NAME, CHECK_POSTAL, POSTAL_VALIDATED, MATCHED = range(4)
-CONFIRMATION_POSITIVE = 'Yep correct 👍'
-CONFIRMATION_NEGATIVE = 'Nope, wrong liao 👎'
+ENTERED_NAME, CHECK_POSTAL, POSTAL_VALIDATED, PLEDGE_RESPONSE, MATCHED = range(5)
+ADDR_CONFIRMATION_POSITIVE = 'Yep looks right 👍'
+ADDR_CONFIRMATION_NEGATIVE = 'Nope wrong liao 👎'
+
+PLEDGE_CONFIRMATION_POSITIVE = 'Okay I promise! 😇'
+PLEDGE_CONFIRMATION_NEGATIVE = 'Nope'
 GROUP_IDENTIFIER = '[Kaypoh @ Kampong]'
 
 
 def start(update: Update, context: CallbackContext) -> int:
     """Starts the conversation and asks the user for their name."""
     update.message.reply_text(
-        'Har-lo! My name is KayPoh Bot. \n'
-        'What\'s your *name*? \n'
-        'Send /cancel to end my kay-poh.\n\n',
+        'Har-lo! My name is KayPoh Bot. What\'s your *name*? \n'
+        'Send /cancel to end my kay-poh.\n',
         parse_mode=ParseMode.MARKDOWN
         ),
 
@@ -103,21 +105,38 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
     logger.info("Address: %s Lat: %s Lng: %s", addr, lat, lng)
     keyboard = [
         [
-            InlineKeyboardButton(CONFIRMATION_POSITIVE, callback_data=CONFIRMATION_POSITIVE),
-            InlineKeyboardButton(CONFIRMATION_NEGATIVE, callback_data=CONFIRMATION_NEGATIVE),
+            InlineKeyboardButton(ADDR_CONFIRMATION_POSITIVE, callback_data=ADDR_CONFIRMATION_POSITIVE),
+            InlineKeyboardButton(ADDR_CONFIRMATION_NEGATIVE, callback_data=ADDR_CONFIRMATION_NEGATIVE),
         ]
     ]
     update.message.reply_text(
-        f'Does this *address* look right? \n{addr}',
+        f'Does this *address* look right?\n{addr}\n(select an option below)',
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode=ParseMode.MARKDOWN
     )
 
     return POSTAL_VALIDATED
 
-def personal_pledge():
-    pass
-    # todo: i promise to be respectful of others etc. etc.
+
+def pledge(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
+    keyboard = [
+        [
+            InlineKeyboardButton(PLEDGE_CONFIRMATION_POSITIVE, callback_data=PLEDGE_CONFIRMATION_POSITIVE),
+            InlineKeyboardButton(PLEDGE_CONFIRMATION_NEGATIVE, callback_data=PLEDGE_CONFIRMATION_NEGATIVE),
+        ]
+    ]
+    query.message.reply_text(
+        f"We found your kampong, {context.user_data['name']}! 🙌 🙌 Before we can let you in, "
+        f"do you promise to be *respectful* of others in your kampong? "
+        "No *ageism*, *racism*, *sexism*, *xenophobia*, or any other bad vibes okay? (select an option below)",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+    return PLEDGE_RESPONSE
+
 
 def match_group(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
@@ -125,12 +144,8 @@ def match_group(update: Update, context: CallbackContext) -> int:
     chosen_group, link = find_closest(context.user_data['lat_lng'])
     logger.info("Chosen group: %s Group link: %s", chosen_group, link)
     query.message.reply_text(
-        f'We found your kampong 🙌 🙌  \nTelegram group name: {GROUP_IDENTIFIER} {chosen_group}\nTelegram link: {link}\n'
-        f'Join in and have fun kay-pohing 😎'
-    )
-    query.message.reply_text(
-        '',
-        parse_mode=ParseMode.MARKDOWN
+        f'Join in and have fun kay-pohing 😎\n'
+        f'Telegram group name: {GROUP_IDENTIFIER} {chosen_group}\nTelegram link: {link}\n'
     )
 
     return ConversationHandler.END
@@ -165,7 +180,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
     logger.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text(
-        'Cya!', reply_markup=ReplyKeyboardRemove()
+        'Cya! Hope you can join us next time.', reply_markup=ReplyKeyboardRemove()
     )
 
     return ConversationHandler.END
@@ -191,12 +206,22 @@ def main() -> None:
             CHECK_POSTAL: [MessageHandler(Filters.text & (~Filters.command), check_postal_validity)],
             POSTAL_VALIDATED: [
                 CallbackQueryHandler(
-                    match_group,
-                    pattern=f'^{CONFIRMATION_POSITIVE}$',
+                    pledge,
+                    pattern=f'^{ADDR_CONFIRMATION_POSITIVE}$',
                 ),
                 CallbackQueryHandler(
                     retry_location,
-                    pattern=f'^{CONFIRMATION_NEGATIVE}$',
+                    pattern=f'^{ADDR_CONFIRMATION_NEGATIVE}$',
+                )
+            ],
+            PLEDGE_RESPONSE: [
+                CallbackQueryHandler(
+                    match_group,
+                    pattern=f'^{PLEDGE_CONFIRMATION_POSITIVE}$'
+                ),
+                CallbackQueryHandler(
+                    cancel,
+                    pattern=f'^{PLEDGE_CONFIRMATION_NEGATIVE}$'
                 )
             ]
 
