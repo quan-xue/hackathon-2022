@@ -6,27 +6,17 @@ Bot for directing new joiners to their group
 """
 
 import logging
-import os
 import re
+import pandas as pd
 from typing import Tuple
 
-import pandas as pd
 import requests
-from dotenv import load_dotenv
 from geopy import distance
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import (
-    Updater,
-    CommandHandler,
-    MessageHandler,
-    Filters,
     ConversationHandler,
-    CallbackContext, CallbackQueryHandler,
-)
+    CallbackContext, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, )
 
-load_dotenv()
-
-BOT_TOKEN = os.getenv('MATCH_BOT_TOKEN')
 
 # Enable logging
 logging.basicConfig(
@@ -42,6 +32,7 @@ ADDR_CONFIRMATION_NEGATIVE = 'Nope wrong liao 👎'
 PLEDGE_CONFIRMATION_POSITIVE = 'Okay I promise! 😇'
 PLEDGE_CONFIRMATION_NEGATIVE = 'Nope'
 GROUP_IDENTIFIER = '[Kaypoh @ Kampong]'
+CC_LOCATION = pd.read_csv('cc data/cc_name_coords_link.csv')
 
 
 def start(update: Update, context: CallbackContext) -> int:
@@ -166,7 +157,7 @@ def find_closest(lat_lng: Tuple[float, float]):
     min_dist = 9999
     chosen_rc = ''
     link = ''
-    for _, row in RC_LOCATION.iterrows():
+    for _, row in CC_LOCATION.iterrows():
         curr_dist = distance.distance(lat_lng, (row['lat'], row['long'])).kilometers
         if curr_dist < min_dist:
             chosen_rc = row['name']
@@ -186,62 +177,32 @@ def cancel(update: Update, context: CallbackContext) -> int:
     return ConversationHandler.END
 
 
-def help_command(update: Update, context: CallbackContext) -> None:
-    """Displays info on how to use the bot."""
-    update.message.reply_text("Type /start to find your kampong!")
+matching_convo = ConversationHandler(
+    entry_points=[CommandHandler('join', start)],
+    states={
+        ENTERED_NAME: [MessageHandler(Filters.text & (~Filters.command), location)],
+        CHECK_POSTAL: [MessageHandler(Filters.text & (~Filters.command), check_postal_validity)],
+        POSTAL_VALIDATED: [
+            CallbackQueryHandler(
+                pledge,
+                pattern=f'^{ADDR_CONFIRMATION_POSITIVE}$',
+            ),
+            CallbackQueryHandler(
+                retry_location,
+                pattern=f'^{ADDR_CONFIRMATION_NEGATIVE}$',
+            )
+        ],
+        PLEDGE_RESPONSE: [
+            CallbackQueryHandler(
+                match_group,
+                pattern=f'^{PLEDGE_CONFIRMATION_POSITIVE}$'
+            ),
+            CallbackQueryHandler(
+                cancel,
+                pattern=f'^{PLEDGE_CONFIRMATION_NEGATIVE}$'
+            )
+        ]
 
-
-def main() -> None:
-    """Run the bot."""
-    # Create the Updater and pass it your bot's token.
-    updater = Updater(BOT_TOKEN)
-
-    # Get the dispatcher to register handlers
-    dispatcher = updater.dispatcher
-
-    conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start)],
-        states={
-            ENTERED_NAME: [MessageHandler(Filters.text & (~Filters.command), location)],
-            CHECK_POSTAL: [MessageHandler(Filters.text & (~Filters.command), check_postal_validity)],
-            POSTAL_VALIDATED: [
-                CallbackQueryHandler(
-                    pledge,
-                    pattern=f'^{ADDR_CONFIRMATION_POSITIVE}$',
-                ),
-                CallbackQueryHandler(
-                    retry_location,
-                    pattern=f'^{ADDR_CONFIRMATION_NEGATIVE}$',
-                )
-            ],
-            PLEDGE_RESPONSE: [
-                CallbackQueryHandler(
-                    match_group,
-                    pattern=f'^{PLEDGE_CONFIRMATION_POSITIVE}$'
-                ),
-                CallbackQueryHandler(
-                    cancel,
-                    pattern=f'^{PLEDGE_CONFIRMATION_NEGATIVE}$'
-                )
-            ]
-
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-    )
-
-    dispatcher.add_handler(conv_handler)
-
-    dispatcher.add_handler(CommandHandler('help', help_command))
-
-    # Start the Bot
-    updater.start_polling()
-
-    # Run the bot until you press Ctrl-C or the process receives SIGINT,
-    # SIGTERM or SIGABRT. This should be used most of the time, since
-    # start_polling() is non-blocking and will stop the bot gracefully.
-    updater.idle()
-
-
-if __name__ == '__main__':
-    RC_LOCATION = pd.read_csv('cc data/cc_name_coords_link.csv')  # persisted in memory
-    main()
+    },
+    fallbacks=[CommandHandler('cancel', cancel)],
+)
