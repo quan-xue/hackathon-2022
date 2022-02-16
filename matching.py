@@ -17,6 +17,8 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, )
 
+from util import is_valid_postal, search_postal
+
 
 # Enable logging
 logging.basicConfig(
@@ -69,11 +71,9 @@ def retry_location(update: Update, context: CallbackContext) -> int:
 
 
 def check_postal_validity(update: Update, context: CallbackContext) -> int:
-    pattern = re.compile("^\d{6}$")
     postal = update.message.text
-    match_pattern = bool(pattern.match(postal))
 
-    if not match_pattern:
+    if not is_valid_postal(postal):
         logger.info("Postal %s failed. Asking for input again.", postal)
         update.message.reply_text(f'Doesn\'t seem right leh... Must be *6-digit* (e.g. 123456) hor. You entered *{postal}*. Try again?',
                                   reply_markup=ReplyKeyboardRemove(),
@@ -89,11 +89,7 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
                                   parse_mode=ParseMode.MARKDOWN)
         return CHECK_POSTAL
 
-    res = r[0]  # take first result
-    addr = res['ADDRESS'].title()
-    lat, lng = res['LATITUDE'], res['LONGITUDE']
-    context.user_data['lat_lng'] = (lat, lng)
-    logger.info("Address: %s Lat: %s Lng: %s", addr, lat, lng)
+    logger.info(f"Location of event is at {r['address']}, {r['latitude']}, {r['longitude']}")
     keyboard = [
         [
             InlineKeyboardButton(ADDR_CONFIRMATION_POSITIVE, callback_data=ADDR_CONFIRMATION_POSITIVE),
@@ -101,7 +97,7 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
         ]
     ]
     update.message.reply_text(
-        f'Does this *address* look right?\n{addr}\n(select an option below)',
+        f'Does this *address* look right?\n{r["address"]}\n(select an option below)',
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode=ParseMode.MARKDOWN
     )
@@ -140,17 +136,6 @@ def match_group(update: Update, context: CallbackContext) -> int:
     )
 
     return ConversationHandler.END
-
-
-def search_postal(postal_code) -> Tuple[str, float, float]:
-    """
-    :param postal_code:
-    :return: addr, lat, lng
-    """
-    query = {'searchVal': postal_code, 'returnGeom': 'Y', 'getAddrDetails':'Y'}
-    api = 'https://developers.onemap.sg/commonapi/search'
-    response = requests.get(api, params=query)
-    return response.json()['results']
 
 
 def find_closest(lat_lng: Tuple[float, float]):
