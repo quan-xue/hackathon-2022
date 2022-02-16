@@ -2,7 +2,7 @@
 # pylint: disable=C0116,W0613
 
 """
-Bot for directing new joiners to their group
+Bot for directing new joiners to their gorup
 """
 
 import logging
@@ -23,6 +23,8 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext, CallbackQueryHandler,
 )
+import event_service
+from util import is_valid_postal, search_postal
 
 load_dotenv()
 
@@ -76,11 +78,9 @@ def retry_location(update: Update, context: CallbackContext) -> int:
 
 
 def check_postal_validity(update: Update, context: CallbackContext) -> int:
-    pattern = re.compile("^\d{6}$")
     postal = update.message.text
-    match_pattern = bool(pattern.match(postal))
 
-    if not match_pattern:
+    if not is_valid_postal(postal):
         logger.info("Postal %s failed. Asking for input again.", postal)
         update.message.reply_text(f'Doesn\'t seem right leh... Must be *6-digit* (e.g. 123456) hor. You entered *{postal}*. Try again?',
                                   reply_markup=ReplyKeyboardRemove(),
@@ -96,11 +96,7 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
                                   parse_mode=ParseMode.MARKDOWN)
         return CHECK_POSTAL
 
-    res = r[0]  # take first result
-    addr = res['ADDRESS'].title()
-    lat, lng = res['LATITUDE'], res['LONGITUDE']
-    context.user_data['lat_lng'] = (lat, lng)
-    logger.info("Address: %s Lat: %s Lng: %s", addr, lat, lng)
+    logger.info(f"Location of event is at {r['address']}, {r['latitude']}, {r['longitude']}")
     keyboard = [
         [
             InlineKeyboardButton(CONFIRMATION_POSITIVE, callback_data=CONFIRMATION_POSITIVE),
@@ -108,16 +104,13 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
         ]
     ]
     update.message.reply_text(
-        f'Does this *address* look right? \n{addr}',
+        f'Does this *address* look right? \n{r["address"]}',
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode=ParseMode.MARKDOWN
     )
 
     return POSTAL_VALIDATED
 
-def personal_pledge():
-    pass
-    # todo: i promise to be respectful of others etc. etc.
 
 def match_group(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
@@ -129,22 +122,18 @@ def match_group(update: Update, context: CallbackContext) -> int:
         f'Join in and have fun kay-pohing 😎'
     )
     query.message.reply_text(
-        '',
+        'When you join the group, you may notice that there are bots for publicizing community events, '
+        'broadcasting public advisories and many more. '
+        'Fret not, these bots won\'t be able to read your messages because nobody likes being snooped on. '
+        'We get it. We want our favorite chicken rice stall to be our '
+        'kampong\'s best kept secret too. 🙈\n'
+        'All the bots are in _privacy mode_. '
+        'Don\'t take our word for it, here is the official notice by Telegram!\n'
+        'https://core.telegram.org/bots#privacy-mode',
         parse_mode=ParseMode.MARKDOWN
     )
 
     return ConversationHandler.END
-
-
-def search_postal(postal_code) -> Tuple[str, float, float]:
-    """
-    :param postal_code:
-    :return: addr, lat, lng
-    """
-    query = {'searchVal': postal_code, 'returnGeom': 'Y', 'getAddrDetails':'Y'}
-    api = 'https://developers.onemap.sg/commonapi/search'
-    response = requests.get(api, params=query)
-    return response.json()['results']
 
 
 def find_closest(lat_lng: Tuple[float, float]):
@@ -175,7 +164,6 @@ def help_command(update: Update, context: CallbackContext) -> None:
     """Displays info on how to use the bot."""
     update.message.reply_text("Type /start to find your kampong!")
 
-
 def main() -> None:
     """Run the bot."""
     # Create the Updater and pass it your bot's token.
@@ -205,7 +193,7 @@ def main() -> None:
     )
 
     dispatcher.add_handler(conv_handler)
-
+    dispatcher.add_handler(event_service.event_conv_handler(dispatcher)),
     dispatcher.add_handler(CommandHandler('help', help_command))
 
     # Start the Bot
