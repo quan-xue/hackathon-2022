@@ -12,7 +12,6 @@ from typing import Tuple
 
 import pandas as pd
 import requests
-from dotenv import load_dotenv
 from geopy import distance
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import (
@@ -23,8 +22,6 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext, CallbackQueryHandler,
 )
-
-load_dotenv()
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 

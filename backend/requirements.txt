@@ -3,17 +3,16 @@ fastapi==0.55.1
 uvicorn==0.11.3
 pydantic==1.4
 email-validator==1.1.1
+fastapi-utils==0.2.1
 
 # db
 databases[postgresql]==0.4.2
 SQLAlchemy==1.3.16
 alembic==1.4.2
 psycopg2==2.8.4
+
+# geo stuff
 GeoAlchemy2==0.8.*
 geojson-pydantic==0.2.*
 geojson==2.5.*
-
-# app/telegram
-geopy==2.2.0
-requests==2.22.0
-python-telegram-bot==13.11
+shapely==1.7.*

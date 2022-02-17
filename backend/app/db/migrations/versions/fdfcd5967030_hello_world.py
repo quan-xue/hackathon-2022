@@ -5,7 +5,6 @@ Create Date: 2022-02-16 09:06:50.442279
 """
 from alembic import op
 import sqlalchemy as sa
-from geoalchemy2 import Geometry
 
 
 # revision identifiers, used by Alembic
@@ -18,15 +17,16 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "events",
-        sa.Column("id", sa.Integer, nullable=True, primary_key=True),
-        sa.Column("start_time", sa.DateTime, nullable=True, index=True),
-        sa.Column("end_time", sa.DateTime, nullable=True),
-        sa.Column("name", sa.Text, nullable=True),
-        sa.Column("category", sa.Text, nullable=True),
-        sa.Column("description", sa.Text, nullable=True),
-        sa.Column("location", Geometry('POINT'), nullable=True),
-        sa.Column("url", sa.Text, nullable=True),
-        sa.Column("organizer", sa.Text, nullable=True),
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("start_time", sa.DateTime(timezone=True), index=True),
+        sa.Column("end_time", sa.DateTime(timezone=True)),
+        sa.Column("name", sa.Text),
+        sa.Column("category", sa.Text),
+        sa.Column("description", sa.Text),
+        sa.Column("lat", sa.Float),
+        sa.Column("lng", sa.Float),
+        sa.Column("url", sa.Text),
+        sa.Column("organizer", sa.Text),
     )
 
 

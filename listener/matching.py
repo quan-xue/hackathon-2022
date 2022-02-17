@@ -34,7 +34,7 @@ ADDR_CONFIRMATION_NEGATIVE = 'Nope wrong liao 👎'
 PLEDGE_CONFIRMATION_POSITIVE = 'Okay I promise! 😇'
 PLEDGE_CONFIRMATION_NEGATIVE = 'Nope'
 GROUP_IDENTIFIER = '[Kaypoh @ Kampong]'
-CC_LOCATION = pd.read_csv('cc data/cc_name_coords_link.csv')
+CC_LOCATION = pd.read_csv('data/cc_name_coords_link.csv')
 
 
 def start(update: Update, context: CallbackContext) -> int:

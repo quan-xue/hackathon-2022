@@ -2,10 +2,10 @@ from app.db.repositories.base import BaseRepository
 from app.models.events import EventsCreate, EventsUpdate, EventsInDB
 
 
-CREATE_CLEANING_QUERY = """
-    INSERT INTO events (start_time, end_time, name, category, description, location, url, organizer)
-    VALUES (:start_time, :end_time, :name, :category, :description, :location, :url, :organizer)
-    RETURNING start_time, end_time, name, category, description, location, url, organizer;
+CREATE_EVENTS_QUERY = """
+    INSERT INTO events (start_time, end_time, name, category, description, lat, lng, url, organizer)
+    VALUES (:start_time, :end_time, :name, :category, :description, :lat, :lng, :url, :organizer)
+    RETURNING start_time, end_time, name, category, description, lat, lng, url, organizer;
 """
 
 

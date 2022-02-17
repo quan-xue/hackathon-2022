@@ -186,14 +186,12 @@ def get_event_confirmation(update: Update, context: CallbackContext) -> int:
             'name': context.user_data['name'],
             'category': 'independent',
             'description': context.user_data['description'],
-            'location': {
-                'type': 'Point',
-                'coordinates': [context.user_data["location"]["longitude"], context.user_data["location"]["latitude"]]
-            },
+            'lng': [context.user_data["location"]["longitude"], context.user_data["location"]["latitude"]],
+            'lat': [context.user_data["location"]["longitude"], context.user_data["location"]["latitude"]],
             'organizer': '@junwei'
         }
         logger.info(f"data: {data}")
-        requests.post("http://localhost:8000/api/events/", {'new_events': data})
+        requests.post("http://server/api/events/", {'new_events': data})
         update.message.reply_text(
             'Your event has been created!'
         )
