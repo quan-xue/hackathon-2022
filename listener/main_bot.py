@@ -1,4 +1,5 @@
 import os
+
 import pandas as pd
 from dotenv import load_dotenv
 from telegram import Update
@@ -9,8 +10,11 @@ from psa import psa_handler
 from psa_setup_db import DB_NAME
 import create_event_service
 import search_event_service
+from psa_listener import psa_listener
 
-BOT_TOKEN = os.getenv('PSA_LISTENER_BOT_TOKEN')
+load_dotenv()
+
+BOT_TOKEN = os.getenv('CONCIERGE_BOT_TOKEN')
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
@@ -32,7 +36,7 @@ def main() -> None:
     dispatcher.add_handler(search_event_service.search_event_conv_handler(dispatcher))
 
     # add psa conversation
-    dispatcher.add_handler(psa_handler)
+    dispatcher.add_handler(psa_listener)
     dispatcher.add_handler(event_service.event_conv_handler(dispatcher)),
     dispatcher.add_handler(CommandHandler('help', help_command))
 
