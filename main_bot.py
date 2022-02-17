@@ -1,15 +1,18 @@
 import os
-import pandas as pd
+import sqlite3
+
+from psa import psa_handler
+from psa_setup_db import DB_NAME
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
-from matching import matching_convo
 import event_service
+from matching import matching_convo
 
 load_dotenv()
 
-BOT_TOKEN = os.getenv('MATCH_BOT_TOKEN')
+BOT_TOKEN = os.getenv('PSA_LISTENER_BOT_TOKEN')
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
@@ -27,6 +30,9 @@ def main() -> None:
 
     # add matching conversation
     dispatcher.add_handler(matching_convo)
+
+    # add psa conversation
+    dispatcher.add_handler(psa_handler)
     dispatcher.add_handler(event_service.event_conv_handler(dispatcher)),
     dispatcher.add_handler(CommandHandler('help', help_command))
 

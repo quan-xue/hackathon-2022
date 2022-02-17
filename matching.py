@@ -37,7 +37,7 @@ GROUP_IDENTIFIER = '[Kaypoh @ Kampong]'
 CC_LOCATION = pd.read_csv('cc data/cc_name_coords_link.csv')
 
 
-def start(update: Update, context: CallbackContext) -> int:
+def join(update: Update, context: CallbackContext) -> int:
     """Starts the conversation and asks the user for their name."""
     update.message.reply_text(
         'Har-lo! My name is KayPoh Bot. What\'s your *name*? \n'
@@ -62,7 +62,7 @@ def location(update: Update, context: CallbackContext) -> int:
 
 def retry_location(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
-    query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
+    query.answer("You have indicated that the postal code is wrong.")
     query.message.reply_text(f'No problem. What\'s your *postal code* (e.g.123456)?',
                              reply_markup=ReplyKeyboardRemove(),
                              parse_mode=ParseMode.MARKDOWN)
@@ -89,7 +89,8 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
                                   parse_mode=ParseMode.MARKDOWN)
         return CHECK_POSTAL
 
-    logger.info(f"Location of event is at {r['address']}, {r['latitude']}, {r['longitude']}")
+    logger.info(f"Group is at {r['address']}, {r['latitude']}, {r['longitude']}")
+    context.user_data['lat_lng'] = (r['latitude'], r['longitude'])
     keyboard = [
         [
             InlineKeyboardButton(ADDR_CONFIRMATION_POSITIVE, callback_data=ADDR_CONFIRMATION_POSITIVE),
@@ -107,7 +108,7 @@ def check_postal_validity(update: Update, context: CallbackContext) -> int:
 
 def pledge(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
-    query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
+    query.answer("You have confirmed your address.")
     keyboard = [
         [
             InlineKeyboardButton(PLEDGE_CONFIRMATION_POSITIVE, callback_data=PLEDGE_CONFIRMATION_POSITIVE),
@@ -127,9 +128,9 @@ def pledge(update: Update, context: CallbackContext) -> int:
 
 def match_group(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
-    query.answer()  # CallbackQueries need to be answered, even if no notification to the user is needed
     chosen_group, link = find_closest(context.user_data['lat_lng'])
     logger.info("Chosen group: %s Group link: %s", chosen_group, link)
+    query.answer("Thanks for making our community a safe and pleasant space for all!")
     query.message.reply_text(
         f'Join in and have fun kay-pohing 😎\n'
         f'Telegram group name: {GROUP_IDENTIFIER} {chosen_group}\nTelegram link: {link}\n'
@@ -163,7 +164,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 
 matching_convo = ConversationHandler(
-    entry_points=[CommandHandler('join', start)],
+    entry_points=[CommandHandler('join', join)],
     states={
         ENTERED_NAME: [MessageHandler(Filters.text & (~Filters.command), location)],
         CHECK_POSTAL: [MessageHandler(Filters.text & (~Filters.command), check_postal_validity)],
