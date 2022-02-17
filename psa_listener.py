@@ -97,9 +97,9 @@ def edit_message(update: Update, context: CallbackContext) -> int:
 
 def verify_message(update: Update, context: CallbackContext) -> int:
     """Shows message being sent"""
-    context.user_data['message'] = update.message.text
+    message = f"⚠️Public announcement from *{context.user_data['agency']}*⚠\n{update.message.text}"
+    context.user_data['message'] = message
     logger.info(f"Message: {context.user_data['message']}")
-    message = f"⚠️Public service announcement from *{context.user_data['agency']}*⚠\n{context.user_data['message']}"
     keyboard = [
         [
             InlineKeyboardButton(MESSAGE_CONFIRMATION_POSITIVE, callback_data=MESSAGE_CONFIRMATION_POSITIVE),
@@ -152,7 +152,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
     return ConversationHandler.END
 
 
-psa_handler = ConversationHandler(
+psa_listener = ConversationHandler(
     entry_points=[CommandHandler('broadcast', broadcast)],
     states={
         SELECT_KAMPONG: [CallbackQueryHandler(draft_message)],
