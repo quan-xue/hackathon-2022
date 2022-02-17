@@ -1,6 +1,7 @@
 from datetime import datetime
 import logging
 from dateutil import parser
+import requests
 from telegram import ReplyKeyboardRemove, Update, ParseMode, ReplyKeyboardMarkup
 from telegram.ext import (
     Dispatcher,
@@ -179,6 +180,20 @@ def get_event_confirmation(update: Update, context: CallbackContext) -> int:
 
     if decision == "confirm":
         # save context.user_data into db
+        data = {
+            'start_time': context.user_data['start_time'].strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'end_time': context.user_data['end_time'].strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'name': context.user_data['name'],
+            'category': 'independent',
+            'description': context.user_data['description'],
+            'location': {
+                'type': 'Point',
+                'coordinates': [context.user_data["location"]["longitude"], context.user_data["location"]["latitude"]]
+            },
+            'organizer': '@junwei'
+        }
+        logger.info(f"data: {data}")
+        requests.post("http://localhost:8000/api/events/", {'new_events': data})
         update.message.reply_text(
             'Your event has been created!'
         )
