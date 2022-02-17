@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+print_usage () {
+    cat << EOF
+Usage: $0 <action>
+  Runs an action on the code base.
+  Possible args:
+    -h|--help    Prints this help usage.
+    dev-run      Runs the server in interactive development mode.
+EOF
+}
+
+wait_for_db () {
+    # Wait for Postgres to be available
+    # Strategy from http://superuser.com/a/806331/98716
+    DATABASE_DEV="/dev/tcp/${POSTGRES_HOST}/${POSTGRES_PORT}"
+    echo "Checking database connection ${DATABASE_DEV}"
+    timeout ${POSTGRES_TIMEOUT} bash <<EOT
+while ! (echo > "${DATABASE_DEV}") >/dev/null 2>&1; do
+    echo "Waiting for database ${DATABASE_DEV}"
+    sleep 2;
+done;
+EOT
+    RESULT=$?
+    if [ ${RESULT} -eq 0 ]; then
+        echo "Database available"
+    else
+        echo "Database is not available"
+        exit 1
+    fi
+    echo "Initializing database"
+}
+
+if [ "$#" -eq 0 ]; then
+    print_usage
+    exit 1
+fi
+
+for arg in "$@"; do
+case "$arg" in
+    -h|--help)
+        print_usage
+        exit 0
+        ;;
+    dev-run)
+        wait_for_db
+
+        echo "Getting tables up-to-date..."
+        alembic upgrade head
+
+        echo "Running in development mode..."
+        uvicorn app.api.server:app --reload --workers 1 --host 0.0.0.0 --port 8000
+        ;;
+    *)
+        print_usage
+        exit 1
+        ;;
+esac
+done
