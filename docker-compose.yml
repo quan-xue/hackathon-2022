@@ -6,12 +6,13 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      POSTGRES_DB: kaypoh
-      POSTGRES_PASSWORD: youreallykaypoh
-      POSTGRES_USER: kaypoh
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_TIMEOUT: 60
+      SQLALCHEMY_DATABASE_URI: postgresql://kaypoh:youreallykaypoh@postgres:5432/kaypoh
     volumes:
       - ./backend/:/backend/
-    command: uvicorn app.api.server:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    command: ["./cmd", "dev-run"]
     ports:
       - 8000:8000
     depends_on:
