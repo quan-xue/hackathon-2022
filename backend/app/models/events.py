@@ -26,7 +26,6 @@ class EventsBase(CoreModel):
     name: Optional[str]
     category: Optional[CategoryType]
     description: Optional[str]
-    location: Optional[Point]
     url: Optional[str]
     organizer: Optional[str]
 
@@ -37,21 +36,23 @@ class EventsCreate(EventsBase):
     name: str
     category: CategoryType
     description: str
-    location: Point
+    lat: float
+    lng: float
 
 
 class EventsUpdate(EventsBase):
     pass
 
 
-class EventsInDB(IDModelMixin, EventsBase):
+class EventsInDB(EventsBase):
     start_time: datetime
     end_time: datetime
     name: str
     category: CategoryType
     description: str
-    location: Point
+    lat: float
+    lng: float
 
-
-class EventsPublic(IDModelMixin, EventsBase):
-    pass
+class EventsPublic(EventsBase):
+    lat: float
+    lng: float

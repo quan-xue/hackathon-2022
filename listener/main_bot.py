@@ -1,14 +1,11 @@
 import os
 import pandas as pd
-from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 from matching import matching_convo
 import create_event_service
 import search_event_service
-
-load_dotenv()
 
 BOT_TOKEN = os.getenv('MATCH_BOT_TOKEN')
 

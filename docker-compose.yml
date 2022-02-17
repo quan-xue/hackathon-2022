@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # server runs periodic tasks and interacts with database
   server:
     build:
       context: ./backend
@@ -12,11 +13,28 @@ services:
       SQLALCHEMY_DATABASE_URI: postgresql://kaypoh:youreallykaypoh@postgres:5432/kaypoh
     volumes:
       - ./backend/:/backend/
-    command: ["./cmd", "dev-run"]
+    command:
+      ["./cmd", "dev-run"]
     ports:
       - 8000:8000
     depends_on:
       - postgres
+
+  # bot polls for user updates
+  listener:
+    build:
+      context: ./listener
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - 5000:5000
+    depends_on:
+      - postgres
+    volumes:
+      - ./listener/:/listener/
+      - ./data/:/listener/data/
+    command:
+      ["python3", "main_bot.py"]
 
   postgres:
     image: postgis/postgis:13-3.1

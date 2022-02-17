@@ -11,5 +11,3 @@ docker-compose up
 # spin down the container
 docker-compose down -v
 ```
-
-

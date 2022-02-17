@@ -9,8 +9,8 @@ import geojson
 import csv
 from xml.etree import ElementTree as ET
 
-path_to_geojson = "../rc data/community-clubs.geojson"
-path_to_csv = "../rc data/rc_name_coords.csv"
+path_to_geojson = "../data/community-clubs.geojson"
+path_to_csv = "../data/rc_name_coords.csv"
 
 # Extract
 with open(path_to_geojson) as f:
