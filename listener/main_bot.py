@@ -1,13 +1,16 @@
 import os
 import pandas as pd
+from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 from matching import matching_convo
+from psa import psa_handler
+from psa_setup_db import DB_NAME
 import create_event_service
 import search_event_service
 
-BOT_TOKEN = os.getenv('MATCH_BOT_TOKEN')
+BOT_TOKEN = os.getenv('PSA_LISTENER_BOT_TOKEN')
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
@@ -27,6 +30,10 @@ def main() -> None:
     dispatcher.add_handler(matching_convo)
     dispatcher.add_handler(create_event_service.create_event_conv_handler(dispatcher)),
     dispatcher.add_handler(search_event_service.search_event_conv_handler(dispatcher))
+
+    # add psa conversation
+    dispatcher.add_handler(psa_handler)
+    dispatcher.add_handler(event_service.event_conv_handler(dispatcher)),
     dispatcher.add_handler(CommandHandler('help', help_command))
 
     # Start the Bot
