@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 from matching import matching_convo
-import event_service
+import create_event_service
 
 load_dotenv()
 
@@ -27,7 +27,7 @@ def main() -> None:
 
     # add matching conversation
     dispatcher.add_handler(matching_convo)
-    dispatcher.add_handler(event_service.event_conv_handler(dispatcher)),
+    dispatcher.add_handler(create_event_service.event_conv_handler(dispatcher)),
     dispatcher.add_handler(CommandHandler('help', help_command))
 
     # Start the Bot
