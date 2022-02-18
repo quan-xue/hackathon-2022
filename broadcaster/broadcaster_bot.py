@@ -8,15 +8,18 @@ Bot for directing new joiners to their group
 import logging
 import os
 import sqlite3
+import sys
 
 from telegram import Update, ParseMode
 from telegram.ext import (
     CallbackContext
 )
 from telegram.ext import Updater, CommandHandler
-import sys
+
 sys.path.append('../')
 from listener.psa_listener import ALL_KAMPONGS
+from moderator import moderator
+
 
 BOT_TOKEN = os.getenv('PSA_BROADCASTER_BOT_TOKEN')
 BROADCAST_POLL_INTERVAL = 10  # in seconds
@@ -69,6 +72,11 @@ def main() -> None:
 
     # add psa broadcaster
     dispatcher.add_handler(CommandHandler('broadcast_start', broadcast_start))
+
+    # moderator bot
+    dispatcher.add_handler(moderator)
+
+    # add kang ren's event broadcaster here
 
     # Start the Bot
     updater.start_polling()

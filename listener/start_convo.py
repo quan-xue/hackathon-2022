@@ -13,9 +13,18 @@ from telegram.ext import (
     CallbackContext, CallbackQueryHandler
 )
 
+# Enable logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+
+logger = logging.getLogger(__name__)
+
 
 def start(update: Update, context: CallbackContext) -> int:
     """Starts the conversation"""
+    logger.info('user id %s', update.message.from_user.id)
+    logger.info('chat id %s', update.message.chat_id)
     update.message.reply_text(
         'Welcome to the *Kaypoh @ Kampong Concierge* 🤵‍♂. Here are the things I can do for you:\n'
         '1. /join to find your kampong telegram group\n'
