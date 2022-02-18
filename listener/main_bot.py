@@ -1,15 +1,11 @@
 import os
 
-import pandas as pd
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
+import event_service
 from matching import matching_convo
-from psa import psa_handler
-from psa_setup_db import DB_NAME
-import create_event_service
-import search_event_service
 from psa_listener import psa_listener
 
 load_dotenv()
@@ -32,8 +28,6 @@ def main() -> None:
 
     # add matching conversation
     dispatcher.add_handler(matching_convo)
-    dispatcher.add_handler(create_event_service.create_event_conv_handler(dispatcher)),
-    dispatcher.add_handler(search_event_service.search_event_conv_handler(dispatcher))
 
     # add psa conversation
     dispatcher.add_handler(psa_listener)
