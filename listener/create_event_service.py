@@ -177,21 +177,22 @@ def get_event_desc(update: Update, context: CallbackContext) -> int:
 
 def get_event_confirmation(update: Update, context: CallbackContext) -> int:
     decision = update.message.text
-
     if decision == "confirm":
         # save context.user_data into db
         data = {
-            'start_time': context.user_data['start_time'].strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'end_time': context.user_data['end_time'].strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'name': context.user_data['name'],
-            'category': 'independent',
-            'description': context.user_data['description'],
-            'lng': [context.user_data["location"]["longitude"], context.user_data["location"]["latitude"]],
-            'lat': [context.user_data["location"]["longitude"], context.user_data["location"]["latitude"]],
-            'organizer': '@junwei'
+            'new_events': {
+                "start_time": context.user_data['start_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'),	
+                "end_time": context.user_data['end_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+                'name': context.user_data['name'],
+                'category': 'independent',
+                'description': context.user_data['description'],
+                'lng': float(context.user_data["location"]["longitude"]),
+                'lat': float(context.user_data["location"]["latitude"]),
+                'organizer': update.effective_user.username
+            },
         }
         logger.info(f"data: {data}")
-        requests.post("http://server/api/events/", {'new_events': data})
+        requests.post("http://server:8000/api/events/", json=data)
         update.message.reply_text(
             'Your event has been created!'
         )
