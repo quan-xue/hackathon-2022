@@ -21,6 +21,7 @@ class CategoryType(str, Enum):
 
 
 class EventsBase(CoreModel):
+    id: str
     start_time: Optional[datetime]
     end_time: Optional[datetime]
     name: Optional[str]
