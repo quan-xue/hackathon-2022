@@ -18,8 +18,9 @@ def start(update: Update, context: CallbackContext) -> int:
     """Starts the conversation"""
     update.message.reply_text(
         'Welcome to the *Kaypoh @ Kampong Concierge* 🤵‍♂. Here are the things I can do for you:\n'
-        '1. command 1\n'
-        '2. command 2\n',
+        '1. /join to find your kampong telegram group\n'
+        '2. /create_event to create an event for your kampong\n'
+        '3. /search_event to search for events happening in your kampong\n',
         parse_mode=ParseMode.MARKDOWN
     ),
 
