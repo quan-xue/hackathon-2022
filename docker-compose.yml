@@ -13,6 +13,7 @@ services:
       SQLALCHEMY_DATABASE_URI: postgresql://kaypoh:youreallykaypoh@postgres:5432/kaypoh
     volumes:
       - ./backend/:/backend/
+      - ./data/:/backend/data/
     command:
       ["./cmd", "dev-run"]
     ports:
