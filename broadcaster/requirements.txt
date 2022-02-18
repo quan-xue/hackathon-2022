@@ -1,0 +1,3 @@
+# app/telegram
+python-telegram-bot==13.11
+pandas==1.3.0
