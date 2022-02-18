@@ -1,16 +1,13 @@
 import os
-
-from dotenv import load_dotenv
+import pandas as pd
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
-import event_service
 from matching import matching_convo
-from psa_listener import psa_listener
+import create_event_service
+import search_event_service
 
-load_dotenv()
-
-BOT_TOKEN = os.getenv('CONCIERGE_BOT_TOKEN')
+BOT_TOKEN = os.getenv('MATCH_BOT_TOKEN')
 
 
 def help_command(update: Update, context: CallbackContext) -> None:
@@ -28,10 +25,8 @@ def main() -> None:
 
     # add matching conversation
     dispatcher.add_handler(matching_convo)
-
-    # add psa conversation
-    dispatcher.add_handler(psa_listener)
-    dispatcher.add_handler(event_service.event_conv_handler(dispatcher)),
+    dispatcher.add_handler(create_event_service.create_event_conv_handler(dispatcher)),
+    dispatcher.add_handler(search_event_service.search_event_conv_handler(dispatcher))
     dispatcher.add_handler(CommandHandler('help', help_command))
 
     # Start the Bot
