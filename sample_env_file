@@ -1,0 +1,8 @@
+CONCIERGE_BOT_TOKEN=''
+PSA_LISTENER_BOT_TOKEN=''
+PSA_BROADCASTER_BOT_TOKEN=''
+
+# public advisory db
+PUBLIC_ADVISORY_DB_PATH = './data/public_advisory.db'
+PUBLIC_ADVISORY_TABLE_MESSAGE = 'public_advisory'
+PUBLIC_ADVISORY_AGENCY = 'agency'
