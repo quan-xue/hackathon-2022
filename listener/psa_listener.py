@@ -117,7 +117,7 @@ def confirm_message(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     query.answer()
     query.message.reply_text(
-        f"Great! We have lined up your message for broadcast. It wil be sent out within the next minute. Cya!"
+        f"Great! We have lined up your message for broadcast. It wil be sent out within the next minute. Cya."
     )
 
     data_to_write = (

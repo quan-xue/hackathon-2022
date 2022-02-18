@@ -70,6 +70,8 @@ def main() -> None:
     # add psa broadcaster
     dispatcher.add_handler(CommandHandler('broadcast_start', broadcast_start))
 
+    # add kang ren's event broadcaster here
+
     # Start the Bot
     updater.start_polling()
 
