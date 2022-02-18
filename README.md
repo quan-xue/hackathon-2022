@@ -11,3 +11,12 @@ docker-compose up
 # spin down the container
 docker-compose down -v
 ```
+
+
+To setup the PSA DB:
+
+```bash
+python ./scripts/psa_setup_db.py
+```
+
+The DB file will automatically be created in the data folder for usage by the container.
