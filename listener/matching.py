@@ -6,11 +6,9 @@ Bot for directing new joiners to their group
 """
 
 import logging
-import re
-import pandas as pd
 from typing import Tuple
 
-import requests
+import pandas as pd
 from geopy import distance
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import (
@@ -18,7 +16,6 @@ from telegram.ext import (
     CallbackContext, CommandHandler, MessageHandler, Filters, CallbackQueryHandler, )
 
 from util import is_valid_postal, search_postal
-
 
 # Enable logging
 logging.basicConfig(
@@ -152,10 +149,17 @@ def find_closest(lat_lng: Tuple[float, float]):
     return chosen_rc, link
 
 
+def reject_pledge(update: Update, context: CallbackContext) -> int:
+    query = update.callback_query
+    logger.info("Reject pledge")
+    query.answer()
+    query.message.reply_text("Sorry to hear that... Hope you can join us in the future!")
+
+    return ConversationHandler.END
+
+
 def cancel(update: Update, context: CallbackContext) -> int:
     """Cancels and ends the conversation."""
-    user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
     update.message.reply_text(
         'Cya! Hope you can join us next time.', reply_markup=ReplyKeyboardRemove()
     )
@@ -184,7 +188,7 @@ matching_convo = ConversationHandler(
                 pattern=f'^{PLEDGE_CONFIRMATION_POSITIVE}$'
             ),
             CallbackQueryHandler(
-                cancel,
+                reject_pledge,
                 pattern=f'^{PLEDGE_CONFIRMATION_NEGATIVE}$'
             )
         ]
