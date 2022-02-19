@@ -1,6 +1,5 @@
 import logging
 
-from dateutil import parser
 from telegram import Update, ParseMode, ReplyKeyboardRemove
 from telegram.ext import (
     Dispatcher,
@@ -11,7 +10,7 @@ from telegram.ext import (
     CallbackContext, 
 )
 
-from util import is_valid_postal, reverse_geocode, search_postal
+from util import format_date, format_event, is_valid_postal, parse_date, reverse_geocode, search_events, search_postal
 
 # Enable logging
 logging.basicConfig(
@@ -24,24 +23,28 @@ GET_EVENT_DATE, GET_EVENT_LOCATION = range(2)
 def start(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
         'Hi! To start finding your event, ' 
-        'Please provide us with the *date of the event* which you are interested in. (e.g. 20/12/2021) \n',
+        'please provide us with the *date of the event* which you are interested in. DD/MM/YYYY HH:MM (e.g. 31/3/2022) \n\n'
+        "Don't have a date in mind yet? Enter *skip* to move on to next step!",
         parse_mode=ParseMode.MARKDOWN
     )
 
     return GET_EVENT_DATE
 
 def get_event_date(update: Update, context: CallbackContext) -> int:
-    datetime_input = update.message.text
+    if update.message.text == 'skip':
+        context.chat_data['time'] = None
+    else:
+        datetime_input = update.message.text
+        try:
+            datetime_obj = parse_date(datetime_input)
+        except:
+            update.message.reply_text('Error in parsing date, please try again. DD/MM/YYYY HH:MM (e.g. 31/3/2022)')
+            return GET_EVENT_DATE
+        
+        context.chat_data['time'] = datetime_obj
 
-    try:
-        datetime_obj = parser.parse(datetime_input)
-    except:
-        update.message.reply_text('Error in parsing the date and time, please try again. (e.g. 17/2/2021, 11:30pm)')
-        return GET_EVENT_DATE
-    
-    context.user_data['time'] = datetime_obj
     update.message.reply_text(
-        'Do you have any *preferred location* for the event?\n' 
+        'Enter the *preferred location* for the event.\n\n' 
         'You can use the Location pin drop function or key in the Postal Code. ' 
         'We will find the events that are close to that location.\n',
         parse_mode=ParseMode.MARKDOWN
@@ -77,9 +80,24 @@ def get_event_location(update: Update, context: CallbackContext) -> int:
             )
         return GET_EVENT_LOCATION
 
-    context.user_data['location'] = location
-    update.message.reply_text('Thanks for the input! Search for events based on your requirements.')
-    update.message.reply_text('Here it is...')
+    context.chat_data['location'] = location
+    search_prompt = 'Searching for events'
+    if 'time' in context.chat_data and context.chat_data['time'] is not None:
+        search_prompt += f' on *{format_date(context.chat_data["time"])}*'
+    search_prompt += f' near *{context.chat_data["location"]["address"]}*...'
+    update.message.reply_text(search_prompt, parse_mode=ParseMode.MARKDOWN)
+    events = search_events(context.chat_data['location'], context.chat_data['time'])
+    logger.info(f"Event search results: {events}")
+
+    if not events:
+        update.message.reply_text("No events found.")
+    else:
+        for event in events:
+            update.message.reply_text(
+                format_event(event),
+                parse_mode=ParseMode.MARKDOWN
+            )
+        update.message.reply_text("----- END -----")
     return ConversationHandler.END
 
 def cancel(update: Update, context: CallbackContext) -> int:

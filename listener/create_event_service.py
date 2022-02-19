@@ -1,8 +1,7 @@
 from datetime import datetime
 import logging
-from dateutil import parser
 import requests
-from telegram import ReplyKeyboardRemove, Update, ParseMode, ReplyKeyboardMarkup
+from telegram import ReplyKeyboardRemove, Update, ParseMode
 from telegram.ext import (
     Dispatcher,
     CommandHandler,
@@ -12,7 +11,7 @@ from telegram.ext import (
     CallbackContext, 
 )
 
-from util import is_valid_postal, reverse_geocode, search_postal
+from util import format_datetime, is_valid_postal, parse_date, reverse_geocode, search_postal
 
 
 # Enable logging
@@ -28,25 +27,25 @@ GET_EVENT_NAME, GET_LOCATION, GET_EVENT_DATETIME, \
 def start(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
         'Hi! To start off the event creation process, ' 
-        'you could first provide us with the name of the event.\n',
+        'please provide us with the *name* of the event.\n',
         parse_mode=ParseMode.MARKDOWN
     )
 
     return GET_EVENT_NAME
 
 def is_editing_field(context: CallbackContext) -> bool:
-    return 'is_editing' in context.user_data and context.user_data['is_editing']
+    return 'is_editing' in context.chat_data and context.chat_data['is_editing']
 
 
 def get_event_name(update: Update, context: CallbackContext) -> int:
-    context.user_data['name'] = update.message.text
+    context.chat_data['name'] = update.message.text
 
     if is_editing_field(context):
-        update.message.reply_text(event_summary(context), parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(event_summary(update, update, context), parse_mode=ParseMode.MARKDOWN)
         return GET_EVENT_CONFIRMATION_CHOICE
 
     update.message.reply_text(
-        'Please provide us with the location of the event.\n'
+        'Please provide us with the *location of the event*.\n\n'
         'You can use the Location pin drop function or key in the Postal Code.',
         parse_mode=ParseMode.MARKDOWN
     )
@@ -82,14 +81,15 @@ def get_location(update: Update, context: CallbackContext) -> int:
             )
         return GET_LOCATION
 
-    context.user_data['location'] = location
+    context.chat_data['location'] = location
     if is_editing_field(context):
-        update.message.reply_text(event_summary(context), parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(event_summary(update, context), parse_mode=ParseMode.MARKDOWN)
         return GET_EVENT_CONFIRMATION_CHOICE
 
     update.message.reply_text(
-        f'The location of your event is at {location["address"]}.\n'
-        'Please share starting time of the event. (e.g. 17/2/2021, 11:30pm)'
+        f'The location of your event is at {location["address"]}.\n\n'
+        'Please key in the *starting time* of the event. DD/MM/YYYY HH:MM (e.g. 31/3/2022, 16:30)',
+        parse_mode=ParseMode.MARKDOWN
         )
     return GET_EVENT_DATETIME
 
@@ -97,80 +97,88 @@ def get_location(update: Update, context: CallbackContext) -> int:
 def get_event_datetime(update: Update, context: CallbackContext) -> int:
     datetime_input = update.message.text
     try:
-        datetime_obj = parser.parse(datetime_input)
+        datetime_obj = parse_date(datetime_input)
     except:
-        update.message.reply_text('Error in parsing the date and time, please try again. (e.g. 17/2/2021, 11:30pm)')
+        update.message.reply_text('Error in parsing the starting time, please try again. DD/MM/YYYY HH:MM (e.g. 31/3/2022, 16:30)')
         return GET_EVENT_DATETIME
 
     if datetime_obj <= datetime.now():
         update.message.reply_text("Starting time of event has to be in the future. Please enter start time of event again.")
         return GET_EVENT_DATETIME
     
-    if 'end_time' in context.user_data and datetime_obj >= context.user_data['end_time']:
+    if 'end_time' in context.chat_data and datetime_obj >= context.chat_data['end_time']:
         update.message.reply_text("Starting time of event cannot be after the ending time of the event. Please enter start time of event again.")
         return GET_EVENT_DATETIME
 
     logger.info(f"Start datetime of event is at: {datetime_obj}")
-    context.user_data['start_time'] = datetime_obj
+    context.chat_data['start_time'] = datetime_obj
 
     if is_editing_field(context):
-        update.message.reply_text(event_summary(context), parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(event_summary(update, context), parse_mode=ParseMode.MARKDOWN)
         return GET_EVENT_CONFIRMATION_CHOICE
 
-    update.message.reply_text('Please key in the ending time of your event.')
+    update.message.reply_text(
+        'Please key in the *ending time* of your event. DD/MM/YYYY HH:MM (e.g. 31/3/2022, 16:30)',
+        parse_mode=ParseMode.MARKDOWN
+    )
     return GET_EVENT_END_DATETIME
 
 def get_event_end_datetime(update: Update, context: CallbackContext) -> int:
     end_datetime = update.message.text
     try:
-        datetime_obj = parser.parse(end_datetime)
+        datetime_obj = parse_date(end_datetime)
     except:
-        update.message.reply_text('Error in parsing the date and time, please try again. (e.g. 17/2/2021, 11:30pm)')
+        update.message.reply_text('Error in parsing the ending time, please try again. DD/MM/YYYY HH:MM (e.g. 31/3/2022, 16:30)')
         return GET_EVENT_END_DATETIME
 
-    if datetime_obj <= context.user_data['start_time']:
+    if datetime_obj <= context.chat_data['start_time']:
         update.message.reply_text(
             f"The ending time of event cannot be earlier than the start time of the event. Please enter end time of event again."
             )
         return GET_EVENT_END_DATETIME
 
     logger.info(f"End datetime of event is at: {datetime_obj}")
-    context.user_data['end_time'] = datetime_obj
+    context.chat_data['end_time'] = datetime_obj
 
     if is_editing_field(context):
-        update.message.reply_text(event_summary(context), parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(event_summary(update, context), parse_mode=ParseMode.MARKDOWN)
         return GET_EVENT_CONFIRMATION_CHOICE
 
-    update.message.reply_text('Please key in the description of your event.')
+    update.message.reply_text(
+        'Please key in the *description* of your event.',
+        parse_mode=ParseMode.MARKDOWN
+    )
     return GET_EVENT_DESC
 
-def event_summary(context: CallbackContext) -> str:
+def event_summary(update: Update, context: CallbackContext) -> str:
     return (
-        'Please confirm the details of your event. '
-        'If there are anything that you like to edit, please key in the associated number.\n' 
-        'If not, please enter "confirm".\n\n'
+        'Please confirm the details of your event.\n'
+        'If there are anything that you like to *edit*, please key in the associated number.\n' 
+        'If not, please enter "*confirm*".\n\n'
         '*1. Name of the event:*\n'
-        f'{context.user_data["name"]}\n\n'
+        f'{context.chat_data["name"]}\n\n'
         '*2. Location of the event:*\n'
-        f'{context.user_data["location"]["address"]}\n\n'
+        f'{context.chat_data["location"]["address"]}\n\n'
         '*3. Start time of event:*\n'
-        f'{context.user_data["start_time"]}\n\n'
+        f'{format_datetime(context.chat_data["start_time"])}\n\n'
         '*4. End time of event:*\n'
-        f'{context.user_data["end_time"]}\n\n'
+        f'{format_datetime(context.chat_data["end_time"])}\n\n'
         '*5. Description of event:*\n'
-        f'{context.user_data["description"]}\n\n'
+        f'{context.chat_data["description"]}\n\n'
+        '*Organizer:*\n'
+        f'@{update.effective_user.username}\n\n'
     )
 
 def get_event_desc(update: Update, context: CallbackContext) -> int:
     description = update.message.text
-    context.user_data['description'] = description
+    context.chat_data['description'] = description
 
     if is_editing_field(context):
-        update.message.reply_text(event_summary(context), parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(event_summary(update, context), parse_mode=ParseMode.MARKDOWN)
         return GET_EVENT_CONFIRMATION_CHOICE
 
     update.message.reply_text(
-        event_summary(context),
+        event_summary(update, context),
         parse_mode=ParseMode.MARKDOWN
     )
     return GET_EVENT_CONFIRMATION_CHOICE
@@ -178,16 +186,16 @@ def get_event_desc(update: Update, context: CallbackContext) -> int:
 def get_event_confirmation(update: Update, context: CallbackContext) -> int:
     decision = update.message.text
     if decision == "confirm":
-        # save context.user_data into db
+        # save context.chat_data into db
         data = {
             'new_events': {
-                "start_time": context.user_data['start_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'),	
-                "end_time": context.user_data['end_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-                'name': context.user_data['name'],
+                "start_time": context.chat_data['start_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'),	
+                "end_time": context.chat_data['end_time'].strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+                'name': context.chat_data['name'],
                 'category': 'independent',
-                'description': context.user_data['description'],
-                'lng': float(context.user_data["location"]["longitude"]),
-                'lat': float(context.user_data["location"]["latitude"]),
+                'description': context.chat_data['description'],
+                'lng': float(context.chat_data["location"]["longitude"]),
+                'lat': float(context.chat_data["location"]["latitude"]),
                 'organizer': update.effective_user.username
             },
         }
@@ -199,7 +207,7 @@ def get_event_confirmation(update: Update, context: CallbackContext) -> int:
         return ConversationHandler.END
 
 
-    context.user_data['is_editing'] = True
+    context.chat_data['is_editing'] = True
     if decision == '1':
         update.message.reply_text('Please key in the new event name.')
         return GET_EVENT_NAME
@@ -216,7 +224,7 @@ def get_event_confirmation(update: Update, context: CallbackContext) -> int:
         update.message.reply_text('Please key in the description of the event.')
         return GET_EVENT_DESC
     else:
-        context.user_data['is_editing'] = False
+        context.chat_data['is_editing'] = False
         update.message.reply_text(
             'Invalid input.\n'
             'Either enter "confirm" to confirm the event.\n'

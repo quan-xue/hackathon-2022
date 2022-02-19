@@ -25,3 +25,7 @@ class EventsRepository(BaseRepository):
     async def get_events(self) -> List[EventsInDB]:
         events = await self.db.fetch_all(query=SELECT_EVENTS_QUERY)
         return map(lambda e: EventsInDB(**dict(e)), events)
+
+    async def delete_events(self) -> None:
+        await self.db.execute(query="DELETE from events")
+        return None

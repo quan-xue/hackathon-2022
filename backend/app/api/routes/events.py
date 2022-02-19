@@ -26,3 +26,10 @@ async def get_events(
 ) -> List[EventsPublic]:
     events = await events_repo.get_events()
     return list(events)
+
+@router.delete("/", response_model=None, name="events:delete-events", status_code=HTTP_200_OK)
+async def delete_events(
+    events_repo: EventsRepository = Depends(get_repository(EventsRepository)),
+) -> None:
+    await events_repo.delete_events()
+    return None
