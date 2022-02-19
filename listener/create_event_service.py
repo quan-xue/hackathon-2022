@@ -153,7 +153,7 @@ def get_event_end_datetime(update: Update, context: CallbackContext) -> int:
 def event_summary(update: Update, context: CallbackContext) -> str:
     return (
         'Please confirm the details of your event.\n'
-        'If there are anything that you like to *edit*, please key in the associated number.\n' 
+        'If there are anything that you like to *edit*, please key in the associated number (1 to 5).\n' 
         'If not, please enter "*confirm*".\n\n'
         '*1. Name of the event:*\n'
         f'{context.chat_data["name"]}\n\n'
@@ -245,7 +245,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 def create_event_conv_handler(dispatcher: Dispatcher[CallbackContext, dict, dict, dict]) -> ConversationHandler:
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('create_event', start)],
+        entry_points=[CommandHandler('createevent', start)],
         states={
             GET_EVENT_NAME: [MessageHandler(Filters.text & ~Filters.command, get_event_name)],
             GET_LOCATION: [
