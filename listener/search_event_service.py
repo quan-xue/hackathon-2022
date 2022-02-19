@@ -1,6 +1,7 @@
+import json
 import logging
 
-from telegram import Update, ParseMode, ReplyKeyboardRemove
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, ParseMode, ReplyKeyboardRemove
 from telegram.ext import (
     Dispatcher,
     CommandHandler,
@@ -8,6 +9,7 @@ from telegram.ext import (
     Filters,
     ConversationHandler,
     CallbackContext, 
+    CallbackQueryHandler
 )
 
 from util import format_date, format_event, is_valid_postal, parse_date, reverse_geocode, search_events, search_postal
@@ -18,7 +20,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-GET_EVENT_DATE, GET_EVENT_LOCATION = range(2)
+GET_EVENT_DATE, GET_EVENT_LOCATION, LOAD_MORE_EVENTS = range(3)
+
+EVENT_SIZE_PER_PAGE = 5
+LOAD_MORE_EVENTS_CHOICE = 'Load more please!'
+NO_MORE_EVENTS_MSG = "----- No more events in your kampong -----"
+def MORE_EVENTS_MSG(num_events_left):
+    return f"----- There are {num_events_left} more events in your kampong -----"
 
 def start(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
@@ -87,18 +95,50 @@ def get_event_location(update: Update, context: CallbackContext) -> int:
     search_prompt += f' near *{context.chat_data["location"]["address"]}*...'
     update.message.reply_text(search_prompt, parse_mode=ParseMode.MARKDOWN)
     events = search_events(context.chat_data['location'], context.chat_data['time'])
-    logger.info(f"Event search results: {events}")
+    logger.info(f"{len(events)} events found.")
 
     if not events:
         update.message.reply_text("No events found.")
     else:
-        for event in events:
+        for event in events[:EVENT_SIZE_PER_PAGE]:
             update.message.reply_text(
                 format_event(event),
                 parse_mode=ParseMode.MARKDOWN
             )
-        update.message.reply_text("----- END -----")
-    return ConversationHandler.END
+        if len(events) > EVENT_SIZE_PER_PAGE:
+            context.chat_data['events'] = events
+            context.chat_data['cursor'] = EVENT_SIZE_PER_PAGE
+            update.message.reply_text(
+                MORE_EVENTS_MSG(len(events) - EVENT_SIZE_PER_PAGE),
+                reply_markup=InlineKeyboardMarkup(
+                    [[InlineKeyboardButton(LOAD_MORE_EVENTS_CHOICE, callback_data=LOAD_MORE_EVENTS_CHOICE)]]
+                ),
+            )
+            return LOAD_MORE_EVENTS
+        else:
+            update.message.reply_text(NO_MORE_EVENTS_MSG)
+            return ConversationHandler.END
+
+def load_more_events(update: Update, context: CallbackContext) -> int:
+    events = context.chat_data['events']
+    cursor = context.chat_data['cursor']
+    remaining_events = events[cursor - 1:]
+    for event in remaining_events:
+        update.callback_query.message.reply_text(
+            format_event(event),
+            parse_mode=ParseMode.MARKDOWN
+        )
+    if len(remaining_events) > EVENT_SIZE_PER_PAGE:
+        update.callback_query.message.reply_text(
+            MORE_EVENTS_MSG(len(remaining_events) - EVENT_SIZE_PER_PAGE),
+            reply_markup=InlineKeyboardMarkup(
+                [[InlineKeyboardButton(LOAD_MORE_EVENTS_CHOICE, callback_data=LOAD_MORE_EVENTS_CHOICE)]]
+            ),
+        )
+        return LOAD_MORE_EVENTS
+    else:
+        update.callback_query.message.reply_text(NO_MORE_EVENTS_MSG)
+        return ConversationHandler.END
 
 def cancel(update: Update, context: CallbackContext) -> int:
     user = update.message.from_user
@@ -114,7 +154,13 @@ def search_event_conv_handler(dispatcher: Dispatcher[CallbackContext, dict, dict
         entry_points=[CommandHandler('searcHevent', start)],
         states={
             GET_EVENT_DATE: [MessageHandler(Filters.text & ~Filters.command, get_event_date)],
-            GET_EVENT_LOCATION: [MessageHandler(Filters.location | Filters.text & (~Filters.command), get_event_location)]
+            GET_EVENT_LOCATION: [MessageHandler(Filters.location | Filters.text & (~Filters.command), get_event_location)],
+            LOAD_MORE_EVENTS: [
+                CallbackQueryHandler(
+                    load_more_events,
+                    pattern=f'^{LOAD_MORE_EVENTS_CHOICE}$'
+                ),
+            ]
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )

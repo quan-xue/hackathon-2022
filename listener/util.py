@@ -69,7 +69,7 @@ def search_events(location, datetime: datetime or None):
 
     filtered_events = filter_sort_events_by_loc(location, filtered_events)
 
-    return filtered_events[:5]
+    return filtered_events
 
 def filter_sort_events_by_loc(location, events):
     for event in events:
