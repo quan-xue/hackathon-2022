@@ -8,18 +8,18 @@ Bot for directing new joiners to their group
 import logging
 import os
 import sqlite3
+import sys
 
-from dotenv import load_dotenv
 from telegram import Update, ParseMode
 from telegram.ext import (
     CallbackContext
 )
 from telegram.ext import Updater, CommandHandler
 
-from psa_listener import ALL_KAMPONGS
-from psa_setup_db import DB_NAME, TABLE_MESSAGE
+sys.path.append('../')
+from listener.psa_listener import ALL_KAMPONGS
+from moderator import moderator
 
-load_dotenv()
 
 BOT_TOKEN = os.getenv('PSA_BROADCASTER_BOT_TOKEN')
 BROADCAST_POLL_INTERVAL = 10  # in seconds
@@ -35,13 +35,13 @@ logger = logging.getLogger(__name__)
 def fetch_and_send(context: CallbackContext):
     kampong = context.job.context['kampong']
     chat_id = context.job.context['chat_id']
-    con = sqlite3.connect(DB_NAME)
+    con = sqlite3.connect(os.getenv('PUBLIC_ADVISORY_DB_PATH'))
     cur = con.cursor()
-    query = f"select message from {TABLE_MESSAGE} where kampong='{kampong}' or kampong='{ALL_KAMPONGS}';"
+    query = f"select message from {os.getenv('PUBLIC_ADVISORY_TABLE_MESSAGE')} where kampong='{kampong}' or kampong='{ALL_KAMPONGS}';"
     messages = [r[0] for r in cur.execute(query).fetchall()]
 
     # remove messages
-    delete_query = f"DELETE FROM {TABLE_MESSAGE} WHERE kampong='{kampong}' or kampong='{ALL_KAMPONGS}';"
+    delete_query = f"DELETE FROM {os.getenv('PUBLIC_ADVISORY_TABLE_MESSAGE')} WHERE kampong='{kampong}' or kampong='{ALL_KAMPONGS}';"
     cur.execute(delete_query)
     con.commit()
     con.close()
@@ -72,6 +72,11 @@ def main() -> None:
 
     # add psa broadcaster
     dispatcher.add_handler(CommandHandler('broadcast_start', broadcast_start))
+
+    # moderator bot
+    dispatcher.add_handler(moderator)
+
+    # add kang ren's event broadcaster here
 
     # Start the Bot
     updater.start_polling()

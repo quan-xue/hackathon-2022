@@ -1,5 +1,5 @@
 """
-Definne startup/shutdown tasks in app.
+Define startup/shutdown tasks in app.
 """
 
 from typing import Callable

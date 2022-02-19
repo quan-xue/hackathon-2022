@@ -7,10 +7,10 @@ Bot for directing new joiners to their group
 
 import logging
 import sqlite3
+import os
 from sqlite3.dbapi2 import Cursor
 from typing import Tuple, List
 
-from dotenv import load_dotenv
 from telegram import ReplyKeyboardRemove, Update, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from telegram.ext import (
     CommandHandler,
@@ -19,10 +19,6 @@ from telegram.ext import (
     ConversationHandler,
     CallbackContext, CallbackQueryHandler
 )
-
-from psa_setup_db import DB_NAME, TABLE_AGENCY, TABLE_MESSAGE
-
-load_dotenv()
 
 # Enable logging
 logging.basicConfig(
@@ -39,7 +35,7 @@ ALL_KAMPONGS = 'All of the above'
 
 def get_agency_info(cur: Cursor, username: str) -> Tuple[str, List[str]]:
     """Query db for agency and kampong allowed for broadcasting"""
-    query = f"select agency, kampong from {TABLE_AGENCY} where telegram_handle='{username}';"
+    query = f"select agency, kampong from {os.getenv('PUBLIC_ADVISORY_AGENCY')} where telegram_handle='{username}';"
     r = cur.execute(query).fetchall()
     agency = r[0][0]
     kampongs = [kampong for _, kampong in r]
@@ -50,10 +46,11 @@ def get_agency_info(cur: Cursor, username: str) -> Tuple[str, List[str]]:
 
 def broadcast(update: Update, context: CallbackContext) -> int:
     """Initiates the conversation and select the kampong(s) to broadcast to"""
-    con = sqlite3.connect(DB_NAME)
+    con = sqlite3.connect(os.getenv('PUBLIC_ADVISORY_DB_PATH'))
     cur = con.cursor()
     username = update.message.from_user.username
-    agency, kampongs = get_agency_info(cur, username)
+    username_lower_case = username.lower()  # username non-case sensitive; db stores all in lower case
+    agency, kampongs = get_agency_info(cur, username_lower_case)
     con.close()
 
     context.user_data['agency'] = agency
@@ -120,7 +117,7 @@ def confirm_message(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     query.answer()
     query.message.reply_text(
-        f"Great! We have lined up your message for broadcast. It wil be sent out within the next minute. Cya!"
+        f"Great! We have lined up your message for broadcast. It wil be sent out within the next minute. Cya."
     )
 
     data_to_write = (
@@ -130,9 +127,9 @@ def confirm_message(update: Update, context: CallbackContext) -> int:
     )
 
     # populate db with message
-    con = sqlite3.connect(DB_NAME)
+    con = sqlite3.connect(os.getenv('PUBLIC_ADVISORY_DB_PATH'))
     cur = con.cursor()
-    cur.execute(f"INSERT into {TABLE_MESSAGE} (kampong, agency, message) values (?, ?, ?);", data_to_write)
+    cur.execute(f"INSERT into {os.getenv('PUBLIC_ADVISORY_TABLE_MESSAGE')} (kampong, agency, message) values (?, ?, ?);", data_to_write)
     con.commit()
     con.close()
 

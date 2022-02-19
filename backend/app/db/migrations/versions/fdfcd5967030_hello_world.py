@@ -17,7 +17,8 @@ depends_on = None
 def upgrade() -> None:
     op.create_table(
         "events",
-        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column("onepa_eventid", sa.Integer, nullable=True),
         sa.Column("start_time", sa.DateTime(timezone=True), index=True),
         sa.Column("end_time", sa.DateTime(timezone=True)),
         sa.Column("name", sa.Text),
@@ -27,6 +28,7 @@ def upgrade() -> None:
         sa.Column("lng", sa.Float),
         sa.Column("url", sa.Text),
         sa.Column("organizer", sa.Text),
+        sa.UniqueConstraint("onepa_eventid"),
     )
 
 

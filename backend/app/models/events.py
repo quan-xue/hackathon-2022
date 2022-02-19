@@ -28,6 +28,7 @@ class EventsBase(CoreModel):
     description: Optional[str]
     url: Optional[str]
     organizer: Optional[str]
+    onepa_eventid: Optional[int]
 
 
 class EventsCreate(EventsBase):
@@ -52,6 +53,7 @@ class EventsInDB(EventsBase):
     description: str
     lat: float
     lng: float
+    onepa_eventid: int
 
 class EventsPublic(EventsBase):
     lat: float
