@@ -118,7 +118,7 @@ def update_onepa_events(
         if top_match is None:
             continue
 
-        lat, lng = cc_coord_mapping[top_match]
+        lng, lat = cc_coord_mapping[top_match]
         start_time, end_time = parse_event_times(event["startDate"], event["sessionTime"])
         new_event = {
             "new_events": {
