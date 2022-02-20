@@ -135,6 +135,7 @@ def load_more_events(update: Update, context: CallbackContext) -> int:
                 [[InlineKeyboardButton(LOAD_MORE_EVENTS_CHOICE, callback_data=LOAD_MORE_EVENTS_CHOICE)]]
             ),
         )
+        context.chat_data['cursor'] += EVENT_SIZE_PER_PAGE
         return LOAD_MORE_EVENTS
     else:
         update.callback_query.message.reply_text(NO_MORE_EVENTS_MSG)

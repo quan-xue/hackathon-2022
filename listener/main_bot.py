@@ -4,6 +4,7 @@ from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 import create_event_service
+import inline_event_search_service
 import search_event_service
 from start_convo import start_convo
 from matching import matching_convo
@@ -35,8 +36,9 @@ def main() -> None:
     dispatcher.add_handler(matching_convo)
 
     # add event
-    dispatcher.add_handler(create_event_service.create_event_conv_handler(dispatcher)),
+    dispatcher.add_handler(create_event_service.create_event_conv_handler(dispatcher))
     dispatcher.add_handler(search_event_service.search_event_conv_handler(dispatcher))
+    dispatcher.add_handler(inline_event_search_service.inline_event_search_handler())
 
     # add psa
     dispatcher.add_handler(psa_listener)

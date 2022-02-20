@@ -196,6 +196,7 @@ def get_event_confirmation(update: Update, context: CallbackContext) -> int:
                 'description': context.chat_data['description'],
                 'lng': float(context.chat_data["location"]["longitude"]),
                 'lat': float(context.chat_data["location"]["latitude"]),
+                'address': context.chat_data["location"]["address"],
                 'organizer': update.effective_user.username
             },
         }

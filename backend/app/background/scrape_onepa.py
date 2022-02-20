@@ -129,6 +129,7 @@ def update_onepa_events(
                 "description": event["share"]["description"],
                 "lat": lat,
                 "lng": lng,
+                "address": event["outlet"],
                 "url": event["share"]["url"],
                 "organizer": event["organisingCommitteeName"],
                 "onepa_eventid": event["eventId"],

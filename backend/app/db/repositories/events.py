@@ -4,9 +4,9 @@ from app.models.events import EventsCreate, EventsUpdate, EventsInDB
 
 
 CREATE_EVENTS_QUERY = """
-    INSERT INTO events (start_time, end_time, name, category, description, lat, lng, url, organizer, onepa_eventid)
-    VALUES (:start_time, :end_time, :name, :category, :description, :lat, :lng, :url, :organizer, :onepa_eventid)
-    RETURNING start_time, end_time, name, category, description, lat, lng, url, organizer, onepa_eventid;
+    INSERT INTO events (start_time, end_time, name, category, description, lat, lng, address, url, organizer, onepa_eventid)
+    VALUES (:start_time, :end_time, :name, :category, :description, :lat, :lng, :address, :url, :organizer, :onepa_eventid)
+    RETURNING start_time, end_time, name, category, description, lat, lng, address, url, organizer, onepa_eventid;
 """
 
 SELECT_EVENTS_QUERY = """

@@ -83,8 +83,6 @@ def filter_sort_events_by_loc(location, events):
     )
 
 def format_event(db_event):
-    location = reverse_geocode(f"{db_event['lat']}", f"{db_event['lng']}")
-
     if db_event['category'] == 'independent':
         organizer = f'@{db_event["organizer"]}'
     else:
@@ -94,7 +92,7 @@ def format_event(db_event):
         '*1. Name of the event:*\n'
         f'{db_event["name"]}\n\n'
         '*2. Location of the event:*\n'
-        f'{location["address"]}\n\n'
+        f'{db_event["address"]}\n\n'
         '*3. Start time of event:*\n'
         f'{format_datetime(parser.parse(db_event["start_time"]))}\n\n'
         '*4. End time of event:*\n'
