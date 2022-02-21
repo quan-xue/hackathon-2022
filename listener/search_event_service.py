@@ -25,14 +25,15 @@ GET_EVENT_DATE, GET_EVENT_LOCATION, LOAD_MORE_EVENTS = range(3)
 
 EVENT_SIZE_PER_PAGE = 5
 LOAD_MORE_EVENTS_CHOICE = 'Gimme gimme more'
-NO_MORE_EVENTS_MSG = "----- No more events in your kampong. Wanna create one? Enter /createevent -----"
+NO_MORE_EVENTS_MSG = "-----\nNo more events in your kampong. Wanna create one? Enter /createevent\n-----"
+DATE_FORMAT_HELPER = '(Enter DD/MM/YYYY e.g. 31/03/2022)'
 def MORE_EVENTS_MSG(num_events_left):
     return f"----- There are {num_events_left} more events in your kampong -----"
 
 def start(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
         'So you wanna join in some action? ' 
-        f'What *date* are we looking at? {DATETIME_FORMAT_HELPER}\n\n'
+        f'What *date* are we looking at? {DATE_FORMAT_HELPER}\n\n'
         "Don't have a date in mind yet? Enter *skip* to move on to next step and let us surprise you 😉!",
         parse_mode=ParseMode.MARKDOWN
     )
