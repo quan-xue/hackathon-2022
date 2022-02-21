@@ -37,7 +37,7 @@ CC_LOCATION = pd.read_csv('data/cc_name_coords_link.csv')
 def join(update: Update, context: CallbackContext) -> int:
     """Starts the conversation and asks the user for their name."""
     update.message.reply_text(
-        'Har-lo! My name is KayPoh Bot. What\'s your *name*? \n'
+        'Har-lo! What\'s your *name*? \n'
         'Send /cancel to end my kay-poh.\n',
         parse_mode=ParseMode.MARKDOWN
         ),
