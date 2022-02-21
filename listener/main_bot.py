@@ -6,7 +6,7 @@ from telegram.ext import Updater, CommandHandler, CallbackContext
 import create_event_service
 import inline_event_search_service
 import search_event_service
-from start_convo import start_convo
+from start_convo import start_convo, START_CONVO
 from matching import matching_convo
 from psa_listener import psa_listener
 
@@ -16,9 +16,7 @@ BOT_TOKEN = os.getenv('CONCIERGE_BOT_TOKEN')
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Displays info on how to use the bot."""
-    update.message.reply_text("Welcome, welcome! Here are the things you can do:\n"
-                              "1. Enter /join to find your kampong\n"
-                              "2. Enter /create_event to create an event for your kampong.\n")
+    update.message.reply_text(START_CONVO)
 
 
 def main() -> None:
