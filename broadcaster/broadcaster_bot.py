@@ -69,14 +69,15 @@ def filter_events(events, chat_id):
     logger.info(CHAT_ID_LOCATION_MAPPING)
     filter_count = 0
 
-    dist_mapping = {}
+    official_mapping = {}
+    independent_mapping = {}
 
     for event in events:
         # TODO: better time check
         now = datetime.now()
         # TODO: return timezone info in events API response
         event_time = parser.parse(event['start_time']).replace(tzinfo=None) + timedelta(hours=8)
-        is_within_one_week_ahead = (event_time - now) > timedelta(days=7)
+        is_within_one_week_ahead = timedelta(seconds=0) < (event_time - now) < timedelta(days=7)
         if not is_within_one_week_ahead:
             filter_count += 1
             continue
@@ -84,11 +85,20 @@ def filter_events(events, chat_id):
         kampong_latlng = CHAT_ID_LOCATION_MAPPING[chat_id]
         lat, lng = event["lat"], event["lng"]
         dist = distance.distance(kampong_latlng, (lat, lng)).kilometers
-        dist_mapping[dist] = event
+        if event["category"] == "official":
+            official_mapping[dist] = event
+        else:
+            independent_mapping[dist] = event
+
+    logging.info(f"independents {independent_mapping}")
 
     # TODO: get top 3 by nearest location
-    keys = sorted(dist_mapping.keys())[:3]
+    official = sorted(official_mapping.keys())[:2]
+    independent = sorted(independent_mapping.keys())[:1]
+    keys = [official[0]] + independent + [official[1]]
     logger.info(f"Nearest locations: {keys}. Filtered out {filter_count} entries outside of 1 week window.")
+    dist_mapping = {**official_mapping, **independent_mapping}
+
     return [dist_mapping[k] for k in keys]
 
 
@@ -176,7 +186,7 @@ def main() -> None:
     dispatcher.add_handler(moderator)
 
     # add kang ren's event broadcaster here
-    dispatcher.add_handler(CommandHandler('broadcaststart', broadcast_events))
+    dispatcher.add_handler(CommandHandler('eventbroadcaststart', broadcast_events))
 
     # Start the Bot
     updater.start_polling()
