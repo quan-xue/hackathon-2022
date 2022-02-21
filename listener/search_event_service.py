@@ -153,7 +153,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 def search_event_conv_handler(dispatcher: Dispatcher[CallbackContext, dict, dict, dict]) -> ConversationHandler:
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('eventsearch', start)],
+        entry_points=[CommandHandler('searchevent', start)],
         states={
             GET_EVENT_DATE: [MessageHandler(Filters.text & ~Filters.command, get_event_date)],
             GET_EVENT_LOCATION: [MessageHandler(Filters.location | Filters.text & (~Filters.command), get_event_location)],

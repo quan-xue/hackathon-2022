@@ -1,6 +1,6 @@
 import os
 
-from telegram import Update
+from telegram import Update, ParseMode
 from telegram.ext import Updater, CommandHandler, CallbackContext
 
 import create_event_service
@@ -16,7 +16,7 @@ BOT_TOKEN = os.getenv('CONCIERGE_BOT_TOKEN')
 
 def help_command(update: Update, context: CallbackContext) -> None:
     """Displays info on how to use the bot."""
-    update.message.reply_text(START_CONVO)
+    update.message.reply_text(START_CONVO, parse_mode=ParseMode.MARKDOWN)
 
 
 def main() -> None:
@@ -40,7 +40,6 @@ def main() -> None:
 
     # add psa
     dispatcher.add_handler(psa_listener)
-
 
     # add help
     dispatcher.add_handler(CommandHandler('help', help_command))

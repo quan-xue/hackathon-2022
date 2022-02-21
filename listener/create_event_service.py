@@ -24,11 +24,12 @@ GET_EVENT_NAME, GET_LOCATION, GET_EVENT_DATETIME, \
     GET_EVENT_END_DATETIME, GET_EVENT_DESC, GET_EVENT_CONFIRMATION_CHOICE = range(6)
 
 DATETIME_FORMAT_HELPER = '(Enter DD/MM/YYYY HH:MM e.g. 31/03/2022 16:30)'
+CANCEL_PROCESS = 'Enter /cancel to end.'
 
 
 def start(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
-        'Alrighty! Let\'s get started. What would you like to name your event?',
+        f'Alrighty! Let\'s get started. What would you like to *name* your event? {CANCEL_PROCESS}',
         parse_mode=ParseMode.MARKDOWN
     )
 
@@ -47,8 +48,9 @@ def get_event_name(update: Update, context: CallbackContext) -> int:
         return GET_EVENT_CONFIRMATION_CHOICE
 
     update.message.reply_text(
-        'Please provide us with the *location of the event*.\n\n'
-        'You can key in the postal code (6-digit e.g. 123456) or if you are using a phone, use the location pin drop.',
+        'Please provide us with the *location* of the event.\n'
+        'You can key in the postal code (6-digit e.g. 123456) or if you are using a phone, use the location pin drop.\n'
+        f'{CANCEL_PROCESS}',
         parse_mode=ParseMode.MARKDOWN
     )
     return GET_LOCATION
@@ -65,7 +67,8 @@ def get_location(update: Update, context: CallbackContext) -> int:
         logger.info(f"Postal of the event is at {event_postal_code}")
         if not is_valid_postal(event_postal_code):
             update.message.reply_text(
-                f'Doesn\'t seem right leh... Must be *6-digit* (e.g. 123456) hor. You entered *{event_postal_code}*. Try again?',
+                f'Doesn\'t seem right leh... Must be *6-digit* (e.g. 123456) hor. You entered *{event_postal_code}*. '
+                f'Try again?\n{CANCEL_PROCESS}',
                 reply_markup=ReplyKeyboardRemove(),
                 parse_mode=ParseMode.MARKDOWN
                 )
@@ -79,7 +82,7 @@ def get_location(update: Update, context: CallbackContext) -> int:
     else:
         update.message.reply_text(
             'Don\'t get it... Please either enter your postal code (e.g. 123456) '
-            'or send a location pin if on your phone.',
+            f'or send a location pin if on your phone.\n{CANCEL_PROCESS}',
             parse_mode=ParseMode.MARKDOWN
             )
         return GET_LOCATION
@@ -90,8 +93,8 @@ def get_location(update: Update, context: CallbackContext) -> int:
         return GET_EVENT_CONFIRMATION_CHOICE
 
     update.message.reply_text(
-        f'Sweet! The location of your event is at {location["address"]} 😎.\n\n'
-        f'When should the event start? {DATETIME_FORMAT_HELPER}',
+        f'Sweet! The *location* of your event will be at {location["address"]} 😎.\n\n'
+        f'When will the event *start*? {DATETIME_FORMAT_HELPER}\n{CANCEL_PROCESS}',
         parse_mode=ParseMode.MARKDOWN
         )
     return GET_EVENT_DATETIME
@@ -102,20 +105,20 @@ def get_event_datetime(update: Update, context: CallbackContext) -> int:
     try:
         datetime_obj = parse_date(datetime_input)
     except:
-        update.message.reply_text('Hmm... Cannot figure out your time leh 🤔 '
-                                  f'{DATETIME_FORMAT_HELPER}')
+        update.message.reply_text(f'Hmm... Cannot figure out your time leh 🤔 You entered *{datetime_input}*'
+                                  f'{DATETIME_FORMAT_HELPER}\n{CANCEL_PROCESS}')
         return GET_EVENT_DATETIME
 
     if datetime_obj <= datetime.now():
         update.message.reply_text(f"Don'\t look back in anger...Starting time of event has to be in the future! "
-                                  f"You entered: {datetime_input}. {DATETIME_FORMAT_HELPER}")
+                                  f"You entered *{datetime_input}*. {DATETIME_FORMAT_HELPER}\n{CANCEL_PROCESS}")
         return GET_EVENT_DATETIME
     
     if 'end_time' in context.chat_data and datetime_obj >= context.chat_data['end_time']:
         update.message.reply_text(f"Well... Don\'t end your event before it has even started! "
-                                  f"Your starting time is {datetime_input} but your ending time "
-                                  f"is {context.chat_data['end_time']}"
-                                  f"Please enter start time of event again. {DATETIME_FORMAT_HELPER}")
+                                  f"Your start time is *{datetime_input}* but your end time "
+                                  f"is *{context.chat_data['end_time']}*"
+                                  f"Please enter a new *start time*. {DATETIME_FORMAT_HELPER}\n{CANCEL_PROCESS}")
         return GET_EVENT_DATETIME
 
     logger.info(f"Start datetime of event is at: {datetime_obj}")
@@ -126,7 +129,7 @@ def get_event_datetime(update: Update, context: CallbackContext) -> int:
         return GET_EVENT_CONFIRMATION_CHOICE
 
     update.message.reply_text(
-        f'All good things must come to an end. 😢 When should your event end? {DATETIME_FORMAT_HELPER}',
+        f'All good things must come to an end. 😢 When should your event *end*? {DATETIME_FORMAT_HELPER}\n{CANCEL_PROCESS}',
         parse_mode=ParseMode.MARKDOWN
     )
     return GET_EVENT_END_DATETIME
@@ -137,14 +140,14 @@ def get_event_end_datetime(update: Update, context: CallbackContext) -> int:
     try:
         datetime_obj = parse_date(end_datetime)
     except:
-        update.message.reply_text(f'Sorry can\'t figure out what you meant...{DATETIME_FORMAT_HELPER}')
+        update.message.reply_text(f'Sorry can\'t figure out what you meant...{DATETIME_FORMAT_HELPER}\n{CANCEL_PROCESS}')
         return GET_EVENT_END_DATETIME
 
     if datetime_obj <= context.chat_data['start_time']:
         update.message.reply_text(
             "Well... Don\'t end your event before it has even started! "
-            f"Your ending time is {end_datetime} but your starting time is {context.chat_data['start_time']}"
-            f"Please enter ending time of event again. {DATETIME_FORMAT_HELPER}"
+            f"Your end time is {end_datetime} but your start time is {context.chat_data['start_time']}"
+            f"Please enter a new end time. {DATETIME_FORMAT_HELPER}\n{CANCEL_PROCESS}"
             )
         return GET_EVENT_END_DATETIME
 
@@ -156,7 +159,7 @@ def get_event_end_datetime(update: Update, context: CallbackContext) -> int:
         return GET_EVENT_CONFIRMATION_CHOICE
 
     update.message.reply_text(
-        'Almost there! Let your kampong know what the most fab event is all about! Enter a description for it.',
+        f'Almost there! Finally, enter a description for your event.\n{CANCEL_PROCESS}',
         parse_mode=ParseMode.MARKDOWN
     )
     return GET_EVENT_DESC
@@ -164,9 +167,9 @@ def get_event_end_datetime(update: Update, context: CallbackContext) -> int:
 
 def event_summary(update: Update, context: CallbackContext) -> str:
     return (
-        'Swee la, let\'s confirm the details of your event. \n'
-        'If there is anything that you would like to *edit*, please key in the associated number (1 to 5).\n' 
-        'If not, please key in "*confirm*".\n\n'
+        'Swee la, let\'s double-confirm the details of your event. \n'
+        'If there is anything that you would like to *edit*, please enter the number of the item ie. *1* to *5*.\n' 
+        f'If not, please enter "*confirm*".\n\n{CANCEL_PROCESS}'
         '*1. Name of the event:*\n'
         f'{context.chat_data["name"]}\n\n'
         '*2. Location of the event:*\n'

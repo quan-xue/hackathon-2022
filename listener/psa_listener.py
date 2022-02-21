@@ -60,7 +60,7 @@ def broadcast(update: Update, context: CallbackContext) -> int:
     ]
 
     update.message.reply_text(
-        f'Hi {username} from {agency}. Which kampong(s) would you like to broadcast to? (select an option below)\n'
+        f'Hi *@{username}* from *{agency}*. Which kampong(s) would you like to broadcast to? (select an option below)\n'
         f'Send /cancel to end the conversation.\n',
         reply_markup=InlineKeyboardMarkup(keyboard)
     )

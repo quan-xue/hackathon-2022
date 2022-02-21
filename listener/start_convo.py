@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 START_CONVO = 'Welcome to the *Kaypoh @ Kampong Concierge* 🤵‍♂. Here are the things I can do for you:\n' \
               '1. /join to find your kampong telegram group\n' \
-              '2. /create\_event to create an event for your kampong\n' \
-              '3. /search\_event to search for events happening in your kampong\n'
+              '2. /createevent to create an event for your kampong\n' \
+              '3. /searchevent to search for events happening in your kampong\n'
 
 
 def start(update: Update, context: CallbackContext) -> int:
