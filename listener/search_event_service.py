@@ -12,7 +12,7 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 
-from listener.create_event_service import DATETIME_FORMAT_HELPER
+from create_event_service import DATETIME_FORMAT_HELPER
 from util import format_date, format_event, is_valid_postal, parse_date, reverse_geocode, search_events, search_postal
 
 # Enable logging
