@@ -124,8 +124,10 @@ def get_event_location(update: Update, context: CallbackContext) -> int:
 def load_more_events(update: Update, context: CallbackContext) -> int:
     events = context.chat_data['events']
     cursor = context.chat_data['cursor']
-    remaining_events = events[cursor - 1:]
-    for event in remaining_events:
+    start = cursor - 1
+    end = start + EVENT_SIZE_PER_PAGE
+    remaining_events = events[start:]
+    for event in events[start:end]:
         update.callback_query.message.reply_text(
             format_event(event),
             parse_mode=ParseMode.MARKDOWN
