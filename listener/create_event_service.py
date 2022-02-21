@@ -169,7 +169,7 @@ def event_summary(update: Update, context: CallbackContext) -> str:
     return (
         'Swee la, let\'s double-confirm the details of your event. \n'
         'If there is anything that you would like to *edit*, please enter the number of the item ie. *1* to *5*.\n' 
-        f'If not, please enter "*confirm*".\n\n{CANCEL_PROCESS}'
+        f'If not, please enter "*confirm*".\n{CANCEL_PROCESS}\n\n'
         '*1. Name of the event:*\n'
         f'{context.chat_data["name"]}\n\n'
         '*2. Location of the event:*\n'
