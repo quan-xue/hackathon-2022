@@ -62,7 +62,8 @@ def broadcast(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
         f'Hi *@{username}* from *{agency}*. Which kampong(s) would you like to broadcast to? (select an option below)\n'
         f'Send /cancel to end the conversation.\n',
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        parse_mode=ParseMode.MARKDOWN
     )
 
     return SELECT_KAMPONG
@@ -105,7 +106,7 @@ def verify_message(update: Update, context: CallbackContext) -> int:
     ]
     update.message.reply_text(
         f'This is how your message is going to look like\n........\n{message}\n........\n'
-        f'Does it look okay? (select an option below)',
+        f'Does this look okay? (select an option below)',
         reply_markup=InlineKeyboardMarkup(keyboard),
         parse_mode=ParseMode.MARKDOWN
     )
