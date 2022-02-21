@@ -1,11 +1,13 @@
 import logging
 from uuid import uuid4
+import sys
 
 from telegram import InlineQueryResultArticle, InputTextMessageContent, ParseMode, Update
 from telegram.ext import Updater, InlineQueryHandler, CallbackContext
 from telegram.utils.helpers import escape_markdown
 
-from util import format_event, is_valid_postal, search_events, search_postal
+sys.path.append('../')
+from listener.util import format_event, is_valid_postal, search_events, search_postal
 
 # Enable logging
 logging.basicConfig(

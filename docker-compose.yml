@@ -56,6 +56,21 @@ services:
     command:
       ["python3", "broadcaster_bot.py"]
 
+  inline_event_search:
+    build:
+      context: ./inline_event_search
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - 5002:5002
+    depends_on:
+      - postgres
+    volumes:
+      - ./listener/:/listener/
+      - ./inline_event_search:/inline_event_search/
+    command:
+      ["python3", "inline_event_search_bot.py"]
+
   postgres:
     image: postgis/postgis:13-3.1
     environment:
