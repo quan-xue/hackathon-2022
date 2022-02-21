@@ -12,6 +12,7 @@ from telegram.ext import (
     CallbackQueryHandler
 )
 
+from listener.create_event_service import DATETIME_FORMAT_HELPER
 from util import format_date, format_event, is_valid_postal, parse_date, reverse_geocode, search_events, search_postal
 
 # Enable logging
@@ -23,16 +24,16 @@ logger = logging.getLogger(__name__)
 GET_EVENT_DATE, GET_EVENT_LOCATION, LOAD_MORE_EVENTS = range(3)
 
 EVENT_SIZE_PER_PAGE = 5
-LOAD_MORE_EVENTS_CHOICE = 'Load more please!'
-NO_MORE_EVENTS_MSG = "----- No more events in your kampong -----"
+LOAD_MORE_EVENTS_CHOICE = 'Gimme gimme more'
+NO_MORE_EVENTS_MSG = "----- No more events in your kampong. Wanna create one? Enter /createevent -----"
 def MORE_EVENTS_MSG(num_events_left):
     return f"----- There are {num_events_left} more events in your kampong -----"
 
 def start(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(
-        'Hi! To start finding your event, ' 
-        'please provide us with the *date of the event* which you are interested in. DD/MM/YYYY HH:MM (e.g. 31/3/2022) \n\n'
-        "Don't have a date in mind yet? Enter *skip* to move on to next step!",
+        'So you wanna join in some action? ' 
+        f'What *date* are we looking at? {DATETIME_FORMAT_HELPER}\n\n'
+        "Don't have a date in mind yet? Enter *skip* to move on to next step and let us surprise you 😉!",
         parse_mode=ParseMode.MARKDOWN
     )
 
@@ -152,7 +153,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 def search_event_conv_handler(dispatcher: Dispatcher[CallbackContext, dict, dict, dict]) -> ConversationHandler:
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('search_event', start)],
+        entry_points=[CommandHandler('eventsearch', start)],
         states={
             GET_EVENT_DATE: [MessageHandler(Filters.text & ~Filters.command, get_event_date)],
             GET_EVENT_LOCATION: [MessageHandler(Filters.location | Filters.text & (~Filters.command), get_event_location)],

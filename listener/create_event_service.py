@@ -78,7 +78,8 @@ def get_location(update: Update, context: CallbackContext) -> int:
             return GET_LOCATION
     else:
         update.message.reply_text(
-            'You have given us an invalid reply. Please either send your postal code or location pin.',
+            'Don\'t get it... Please either enter your postal code (e.g. 123456) '
+            'or send a location pin if on your phone.',
             parse_mode=ParseMode.MARKDOWN
             )
         return GET_LOCATION
@@ -258,7 +259,7 @@ def cancel(update: Update, context: CallbackContext) -> int:
 
 def create_event_conv_handler(dispatcher: Dispatcher[CallbackContext, dict, dict, dict]) -> ConversationHandler:
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler('create_event', start)],
+        entry_points=[CommandHandler('createevent', start)],
         states={
             GET_EVENT_NAME: [MessageHandler(Filters.text & ~Filters.command, get_event_name)],
             GET_LOCATION: [

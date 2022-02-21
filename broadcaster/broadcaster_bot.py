@@ -71,7 +71,7 @@ def main() -> None:
     dispatcher = updater.dispatcher
 
     # add psa broadcaster
-    dispatcher.add_handler(CommandHandler('broadcast_start', broadcast_start))
+    dispatcher.add_handler(CommandHandler('broadcaststart', broadcast_start))
 
     # moderator bot
     dispatcher.add_handler(moderator)
