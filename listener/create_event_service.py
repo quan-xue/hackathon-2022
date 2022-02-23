@@ -44,7 +44,7 @@ def get_event_name(update: Update, context: CallbackContext) -> int:
     context.chat_data['name'] = update.message.text
 
     if is_editing_field(context):
-        update.message.reply_text(event_summary(update, update, context), parse_mode=ParseMode.MARKDOWN)
+        update.message.reply_text(event_summary(update, context), parse_mode=ParseMode.MARKDOWN)
         return GET_EVENT_CONFIRMATION_CHOICE
 
     update.message.reply_text(
